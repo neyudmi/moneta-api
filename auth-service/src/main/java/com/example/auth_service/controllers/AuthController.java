@@ -6,6 +6,8 @@ import com.example.auth_service.models.User;
 import com.example.auth_service.services.AuthService;
 import com.example.auth_service.services.JwtService;
 
+import java.net.http.HttpResponse.ResponseInfo;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +30,7 @@ public class AuthController {
         return ResponseEntity.ok(registeredUser);
     }
 
-    @PostMapping("/login")
+    @PostMapping("/signin")
     public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) {
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
 
@@ -38,7 +40,7 @@ public class AuthController {
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setAccessToken(jwtToken);
         loginResponse.setRefreshToken(refreshToken);
-        loginResponse.setExpiresIn(jwtService.getExpirationTime());
+        loginResponse.setAccessExpiresIn(jwtService.getExpirationTime());
 
         return ResponseEntity.ok(loginResponse);
     }
