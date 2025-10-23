@@ -3,7 +3,6 @@ package com.example.auth_service.services;
 
 import com.example.auth_service.models.User;
 import com.example.auth_service.repositories.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
 public class UserServiceImplement implements UserService {
     private final UserRepository userRepository;
 
-    public UserServiceImplement(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImplement(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
