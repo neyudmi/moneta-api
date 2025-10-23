@@ -1,4 +1,6 @@
 package com.example.auth_service.controllers;
+import com.example.auth_service.dtos.LoginResponse;
+import com.example.auth_service.dtos.LoginUserDto;
 import com.example.auth_service.dtos.RegisterUserDto;
 import com.example.auth_service.models.User;
 import com.example.auth_service.services.AuthService;
@@ -24,6 +26,21 @@ public class AuthController {
         User registeredUser = authenticationService.signup(registerUserDto);
 
         return ResponseEntity.ok(registeredUser);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) {
+        User authenticatedUser = authenticationService.authenticate(loginUserDto);
+
+        String jwtToken = jwtService.generateToken(authenticatedUser);
+        String refreshToken = jwtService.generateRefreshToken(authenticatedUser);
+
+        LoginResponse loginResponse = new LoginResponse();
+        loginResponse.setAccessToken(jwtToken);
+        loginResponse.setRefreshToken(refreshToken);
+        loginResponse.setExpiresIn(jwtService.getExpirationTime());
+
+        return ResponseEntity.ok(loginResponse);
     }
 
    

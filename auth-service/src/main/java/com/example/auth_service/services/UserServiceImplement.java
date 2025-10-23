@@ -22,6 +22,7 @@ public class UserServiceImplement implements UserService {
         userRepository.findAll().forEach(users::add);
         return users;
     }
+    
 
     @Override
     public User findByUsername(String username) {
