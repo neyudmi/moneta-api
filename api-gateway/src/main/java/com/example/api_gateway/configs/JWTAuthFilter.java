@@ -20,3 +20,4 @@ public class JWTAuthFilter implements GlobalFilter, Ordered {
         return -1;
     }
 }
+
