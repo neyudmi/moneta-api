@@ -19,13 +19,11 @@ public class JWTAuthFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().toString();
 
-        // ⚡ Cho phép các request /auth/** đi qua không kiểm tra
         if (pathMatcher.match("/auth/**", path)) {
             System.out.println("JWTAuthFilter: Skipping authentication for path: " + path);
             return chain.filter(exchange);
         }
 
-        // ⚠️ Các request khác sẽ tạm thời bị chặn
         exchange.getResponse().setStatusCode(org.springframework.http.HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
     }

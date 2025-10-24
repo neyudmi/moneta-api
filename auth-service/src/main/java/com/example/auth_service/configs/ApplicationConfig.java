@@ -35,13 +35,12 @@ public class ApplicationConfig {
     AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService());
-        authProvider.setPasswordEncoder(passwordEncoder()); // 👈 thêm dòng này
+        authProvider.setPasswordEncoder(passwordEncoder()); 
         return authProvider;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // ⚠️ Chỉ dùng NoOp cho môi trường dev/test — không mã hóa mật khẩu
         return NoOpPasswordEncoder.getInstance();
     }
 }
