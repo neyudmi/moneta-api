@@ -5,9 +5,6 @@ import com.example.auth_service.dtos.RegisterUserDto;
 import com.example.auth_service.models.User;
 import com.example.auth_service.services.AuthService;
 import com.example.auth_service.services.JwtService;
-
-import java.net.http.HttpResponse.ResponseInfo;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

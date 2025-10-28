@@ -1,12 +1,11 @@
 package com.example.auth_service.services;
-
-
 import com.example.auth_service.models.User;
 import com.example.auth_service.repositories.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.List;
-
 
 @Service
 public class UserServiceImplement implements UserService {
@@ -22,8 +21,9 @@ public class UserServiceImplement implements UserService {
         userRepository.findAll().forEach(users::add);
         return users;
     }
-    
 
+    @CacheEvict(value = "authenticatedUsers", key = "#id")
+    
     @Override
     public User findByUsername(String username) {
         return userRepository.findByEmail(username)

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-public class AuthService {
+public class AuthService {  
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final EventPublisherService eventPublisherService;
