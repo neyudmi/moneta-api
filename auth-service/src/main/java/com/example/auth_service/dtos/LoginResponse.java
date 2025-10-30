@@ -6,6 +6,15 @@ public class LoginResponse {
     private long accessExpiresIn;
 
     
+    public LoginResponse(String accessToken, String refreshToken, long accessExpiresIn) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.accessExpiresIn = accessExpiresIn;
+    }
+    
+    public LoginResponse() {
+    }
+
     public String getAccessToken() {
         return accessToken;
     }

@@ -1,5 +1,6 @@
 package com.example.auth_service.dtos;
 
+
 public class MessageResponse {
     private String message;
 

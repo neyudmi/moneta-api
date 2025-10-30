@@ -2,6 +2,7 @@ package com.example.auth_service.controllers;
 import com.example.auth_service.dtos.LoginResponse;
 import com.example.auth_service.dtos.LoginUserDto;
 import com.example.auth_service.dtos.RegisterUserDto;
+import com.example.auth_service.dtos.VerifyUserDto;
 import com.example.auth_service.models.User;
 import com.example.auth_service.services.AuthService;
 import com.example.auth_service.services.JwtService;
@@ -19,7 +20,7 @@ public class AuthController {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
     }
-
+    //Đăng ký
     @PostMapping("/signup")
     public ResponseEntity<User> register(@RequestBody RegisterUserDto registerUserDto) {
         User registeredUser = authenticationService.signup(registerUserDto);
@@ -27,6 +28,7 @@ public class AuthController {
         return ResponseEntity.ok(registeredUser);
     }
 
+    //Đăng nhập
     @PostMapping("/signin")
     public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) {
         User authenticatedUser = authenticationService.authenticate(loginUserDto);
@@ -41,6 +43,26 @@ public class AuthController {
 
         return ResponseEntity.ok(loginResponse);
     }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
+        try {
+            authenticationService.verifyUser(verifyUserDto);
+            return ResponseEntity.ok("Account verified successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/resend")
+    public ResponseEntity<?> resendVerificationCode(@RequestParam String email) {
+        try {
+            authenticationService.resendVerificationCode(email);
+            return ResponseEntity.ok("Verification code sent");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    } 
 
    
 

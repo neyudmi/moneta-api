@@ -5,6 +5,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,9 +14,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Table(name = "users")
 @Entity
+@Getter
+@Setter
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -39,29 +45,13 @@ public class User implements UserDetails {
     @Column(name = "password_last_changed")
     private LocalDateTime passwordLastChanged;
 
-    public LocalDateTime getPasswordLastChanged() {
-        return passwordLastChanged;
-    }
+    @Column(name = "verification_code")
+    private String verificationCode;
 
-    public void setPasswordLastChanged(LocalDateTime passwordLastChanged) {
-        this.passwordLastChanged = passwordLastChanged;
-    }
+    @Column(name = "verification_expiration")
+    private LocalDateTime verificationCodeExpiresAt;
 
-    public LocalDate getBirthDay() {
-        return birthDay;
-    }
-
-    public void setBirthDay(LocalDate birthDay) {
-        this.birthDay = birthDay;
-    }
-
-    public String getGender() {
-        return gender;
-    }
-
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
+    private boolean enabled;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
@@ -71,39 +61,11 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private Date updatedAt;
 
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
     }
 
-    public String getPassword() {
-        return password;
-    }
 
     @Override
     public String getUsername() {
@@ -127,26 +89,10 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    
 
-    public Date getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Date getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Date updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 }

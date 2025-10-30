@@ -24,9 +24,14 @@ public class UserServiceImplement implements UserService {
 
     @CacheEvict(value = "authenticatedUsers", key = "#id")
     
-    @Override
+   @Override
     public User findByUsername(String username) {
-        return userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + username));
+        User user = userRepository.findByEmail(username)
+        .orElseThrow(() -> new RuntimeException("User not found with email: " + username));
+        if (user.isEnabled()) {
+            throw new RuntimeException("Account not verified. Please check your email.");
+        }
+        return user;
     }
+
 }
