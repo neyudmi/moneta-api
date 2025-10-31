@@ -1,9 +1,11 @@
 package com.example.auth_service.controllers;
 
+import com.example.auth_service.dtos.ResetPasswordDto;
 import com.example.auth_service.dtos.LoginResponse;
 import com.example.auth_service.dtos.LoginUserDto;
 import com.example.auth_service.dtos.MessageResponse;
 import com.example.auth_service.dtos.RegisterUserDto;
+import com.example.auth_service.dtos.ResetPasswordDto;
 import com.example.auth_service.dtos.VerifyUserDto;
 import com.example.auth_service.models.User;
 import com.example.auth_service.services.AuthService;
@@ -62,6 +64,36 @@ public class AuthController {
         try {
             authenticationService.resendVerificationCode(email);
             return ResponseEntity.ok(new MessageResponse("Verification code sent"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        try {
+            authenticationService.forgotPassword(email);
+            return ResponseEntity.ok(new MessageResponse("Verification code sent"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<?> verifyResetCode(@RequestBody VerifyUserDto dto) {
+        try {
+            authenticationService.verifyResetCode(dto.getEmail(), dto.getVerificationCode());
+            return ResponseEntity.ok(new MessageResponse("Code verified successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> changePassword(@RequestBody ResetPasswordDto dto) {
+        try {
+            authenticationService.resetPassword(dto.getEmail(), dto.getNewPassword());
+            return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }

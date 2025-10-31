@@ -3,6 +3,7 @@ package com.example.auth_service.services;
 import com.example.auth_service.dtos.LoginUserDto;
 import com.example.auth_service.dtos.RegisterUserDto;
 import com.example.auth_service.dtos.VerifyUserDto;
+import com.example.auth_service.dtos.ResetPasswordDto;
 import com.example.auth_service.models.User;
 import com.example.auth_service.events.UserCreatedEvent;
 import com.example.auth_service.repositories.UserRepository;
@@ -169,6 +170,82 @@ public class AuthService {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+    }
+
+    // (1) Gửi mã OTP đặt lại mật khẩu
+    public void forgotPassword(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        User user = optionalUser.get();
+        String code = generateVerificationCode();
+        user.setVerificationCode(code);
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        String subject = "Xác nhận đặt lại mật khẩu - Moneta";
+        String htmlMessage = """
+                <html><body style="font-family: Arial, sans-serif; background-color:#f4f6f8;">
+                <div style="max-width:600px;margin:20px auto;background-color:white;padding:30px;border-radius:10px;">
+                    <h2 style="color:#FF5722;">Xin chào %s,</h2>
+                    <p>Bạn vừa yêu cầu đặt lại mật khẩu tài khoản Moneta.</p>
+                    <p>Nhập mã OTP sau để xác nhận:</p>
+                    <h1 style="text-align:center;letter-spacing:4px;color:#FF5722;">%s</h1>
+                    <p>Mã hết hạn trong <strong>15 phút</strong>.</p>
+                </div></body></html>
+                """.formatted(user.getFullName(), code);
+
+        try {
+            emailService.sendVerificationEmail(email, subject, htmlMessage);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send reset email");
+        }
+    }
+
+    // (2) Xác minh mã OTP đặt lại mật khẩu
+    public void verifyResetCode(String email, String verificationCode) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        User user = optionalUser.get();
+        if (user.getVerificationCodeExpiresAt() == null ||
+                user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification code expired");
+        }
+
+        if (!user.getVerificationCode().equals(verificationCode)) {
+            throw new RuntimeException("Invalid verification code");
+        }
+
+        // Đánh dấu trạng thái cho phép đổi mật khẩu (nếu bạn có cờ riêng)
+        user.setVerificationCode(null);
+        user.setVerificationCodeExpiresAt(null);
+        user.setEnabled(true); // chỉ tạm bật quyền đổi mật khẩu
+        userRepository.save(user);
+    }
+
+    // (3) Đổi mật khẩu sau khi xác minh thành công
+    public void resetPassword(String email, String newPassword) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        User user = optionalUser.get();
+
+        if (!user.isEnabled()) { // hoặc kiểm tra flag riêng nếu có
+            throw new RuntimeException("Please verify OTP first");
+        }
+
+        // 🔒 Nếu có BCrypt:
+        // user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPassword(newPassword);
+        user.setPasswordLastChanged(LocalDateTime.now());
+        userRepository.save(user);
     }
 
     private String generateVerificationCode() {
