@@ -221,7 +221,6 @@ public class AuthService {
             throw new RuntimeException("Invalid verification code");
         }
 
-        // Đánh dấu trạng thái cho phép đổi mật khẩu (nếu bạn có cờ riêng)
         user.setVerificationCode(null);
         user.setVerificationCodeExpiresAt(null);
         user.setEnabled(true); // chỉ tạm bật quyền đổi mật khẩu
@@ -237,12 +236,10 @@ public class AuthService {
 
         User user = optionalUser.get();
 
-        if (!user.isEnabled()) { // hoặc kiểm tra flag riêng nếu có
+        if (!user.isEnabled()) {
             throw new RuntimeException("Please verify OTP first");
         }
 
-        // 🔒 Nếu có BCrypt:
-        // user.setPassword(passwordEncoder.encode(newPassword));
         user.setPassword(newPassword);
         user.setPasswordLastChanged(LocalDateTime.now());
         userRepository.save(user);
