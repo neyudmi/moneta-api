@@ -9,12 +9,13 @@ import com.example.auth_service.events.UserCreatedEvent;
 import com.example.auth_service.repositories.UserRepository;
 
 import jakarta.mail.MessagingException;
+import jakarta.transaction.Transactional;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.security.authentication.DisabledException; // Thêm import này
+import org.springframework.security.authentication.DisabledException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -38,6 +39,7 @@ public class AuthService {
         this.emailService = emailService;
     }
 
+    @Transactional
     public User signup(RegisterUserDto input) {
         User user = new User();
         user.setFullName(input.getFullName());
@@ -49,16 +51,15 @@ public class AuthService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEnabled(false);
-        sendVerificationEmail(user);
-
         User savedUser = userRepository.save(user);
-
-        // Publish user created event
+        sendVerificationEmail(savedUser);
         UserCreatedEvent event = new UserCreatedEvent(
                 savedUser.getId(),
                 savedUser.getFullName(),
                 savedUser.getEmail());
         eventPublisherService.publishUserCreatedEvent(event);
+
+        System.out.println("📤 [AUTH-SERVICE] Sent USER_CREATED event for: " + savedUser.getEmail());
 
         return savedUser;
     }

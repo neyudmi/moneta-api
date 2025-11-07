@@ -1,4 +1,35 @@
 services:
+  mysql-expense:
+    image: mysql:8.0
+    container_name: mysql-expense
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: expensedb
+      MYSQL_USER: expenseuser
+      MYSQL_PASSWORD: expensepass
+    volumes:
+      - mysql-expense-data:/var/lib/mysql
+    networks:
+      - backend-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   mysql-auth:
     image: mysql:8.0
     container_name: mysql-auth
@@ -88,6 +119,30 @@ services:
     networks:
       - backend-net
 
+  expense-service:
+    image: expense-service-v1.0
+    container_name: expense-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql-expense:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-expense:3306/expensedb?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: expenseuser
+      SPRING_DATASOURCE_PASSWORD: expensepass
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: 123456
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+    networks:
+      - backend-net
+
   api-gateway:
     image: api-gateway-v1.0
     container_name: api-gateway
@@ -98,6 +153,8 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_started
+      expense-service:
+        condition: service_started
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -105,6 +162,9 @@ services:
       SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://auth-service:8080
       SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/auth/**,/users/**,/logout,/refresh
       SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0: PreserveHostHeader
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: expense-service
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://expense-service:8081
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/expense/**
       SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED: false
       SECURITY_JWT_SECRET_KEY: v7kLu8f166qD/9BT1NEF8hPivFmKh6bSi8jQy7rrXZ4=
       SECURITY_JWT_EXPIRATION_TIME: 3600000
