@@ -18,7 +18,7 @@ public class UserRefService {
     @Transactional
     public void handleUserCreated(UserCreatedEvent event) {
         if (userRefRepository.existsById(event.getUserId())) {
-            System.out.println("⚠️ UserRef already exists: " + event.getEmail());
+            System.out.println("UserRef already exists: " + event.getEmail());
             return;
         }
 
@@ -28,6 +28,6 @@ public class UserRefService {
                 event.getEmail());
 
         userRefRepository.save(userRef);
-        System.out.println("✅ [EXPENSE-SERVICE] Saved user_ref: " + event.getEmail());
+        System.out.println("[EXPENSE-SERVICE] Saved user_ref: " + event.getEmail());
     }
 }

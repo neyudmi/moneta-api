@@ -59,7 +59,7 @@ public class AuthService {
                 savedUser.getEmail());
         eventPublisherService.publishUserCreatedEvent(event);
 
-        System.out.println("📤 [AUTH-SERVICE] Sent USER_CREATED event for: " + savedUser.getEmail());
+        System.out.println("[AUTH-SERVICE] Sent USER_CREATED event for: " + savedUser.getEmail());
 
         return savedUser;
     }
