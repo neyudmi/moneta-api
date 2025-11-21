@@ -37,7 +37,8 @@ public class CategoryGroupInitializer {
                 new GroupData("Nhà cửa", "ic_house_2"),
                 new GroupData("Sức khỏe", "ic_health"),
                 new GroupData("Phát triển bản thân", "ic_improve"),
-                new GroupData("Trang phục", "ic_suit"));
+                new GroupData("Trang phục", "ic_suit"),
+                new GroupData("Thu tiền", "ic_income"));
 
         for (GroupData g : groups) {
             Optional<Icon> iconOpt = iconRepository.findByFileName(g.iconFile());

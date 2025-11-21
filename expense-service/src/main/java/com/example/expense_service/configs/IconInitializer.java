@@ -32,7 +32,9 @@ public class IconInitializer {
                 "ic_shoes", "ic_skincare", "ic_smartphone", "ic_sport", "ic_stethoscope",
                 "ic_study", "ic_taxi", "ic_telephone", "ic_tourism", "ic_toy",
                 "ic_truck", "ic_tuition", "ic_tv", "ic_visiatpatient", "ic_water", "ic_food", "ic_children", "ic_house",
-                "ic_house_2", "ic_destination", "ic_hieuhi", "ic_travele", "ic_improve", "ic_health", "ic_suit");
+                "ic_house_2", "ic_destination", "ic_hieuhi", "ic_travele", "ic_improve", "ic_health", "ic_suit",
+                "ic_borrow", "ic_gift_2", "ic_savemoney", "ic_salary_2", "ic_reward", "ic_interest", "ic_income",
+                "ic_debt", "ic_defference");
 
         fileNames.forEach(name -> {
             String displayName = name.replace("ic_", "")

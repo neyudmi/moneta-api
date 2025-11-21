@@ -2,6 +2,8 @@ package com.example.expense_service.services;
 
 import com.example.expense_service.models.Icon;
 import com.example.expense_service.repositories.IconRepository;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

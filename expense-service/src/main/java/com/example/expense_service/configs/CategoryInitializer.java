@@ -97,6 +97,16 @@ public class CategoryInitializer {
                                 new ChildCategory("Giao lưu, quan hệ", "ic_handshake"),
                                 new ChildCategory("Học hành", "ic_study")));
 
+                categoryMap.put("Thu tiền", List.of(
+                                new ChildCategory("Đi vay", "ic_borrow"),
+                                new ChildCategory("Được cho/tặng", "ic_gift_2"),
+                                new ChildCategory("Khác", "ic_difference"),
+                                new ChildCategory("Lương", "ic_salary_2"),
+                                new ChildCategory("Thu nợ", "ic_debt"),
+                                new ChildCategory("Thưởng", "ic_reward"),
+                                new ChildCategory("Tiền lãi", "ic_interest"),
+                                new ChildCategory("Tiền vào", "ic_income")));
+
                 for (Map.Entry<String, List<ChildCategory>> entry : categoryMap.entrySet()) {
                         String groupName = entry.getKey();
                         Optional<CategoryGroup> groupOpt = groupRepository.findByName(groupName);

@@ -4,6 +4,7 @@ import com.example.expense_service.dtos.ParentCategoryDTO;
 import com.example.expense_service.repositories.CategoryGroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 
