@@ -26,9 +26,6 @@ public class TransactionService {
     @Transactional
     public Transactions createTransaction(TransactionDTO request, UUID userId) {
 
-        // UserRef userRef = userRepository.findById(userId)
-        // .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
-
         Wallet wallet = walletRepository.findById(request.getWalletId())
                 .orElseThrow(() -> new RuntimeException("Ví không tồn tại"));
 
@@ -68,4 +65,96 @@ public class TransactionService {
     public List<Transactions> getTransactionsByUserId(UUID userId) {
         return transactionRepository.findByUserIdOrderByTransactionDateDesc(userId);
     }
+
+    @Transactional
+    public void deleteTransaction(UUID transactionId, UUID userId) {
+
+        Transactions tx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new RuntimeException("Transaction không tồn tại"));
+
+        if (!tx.getUserId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền xóa giao dịch này");
+        }
+
+        Wallet wallet = tx.getWallet();
+
+        // Hoàn lại ảnh hưởng của giao dịch
+        if (tx.getType() == TransactionType.EXPENSE) {
+            wallet.setCurrentBalance(wallet.getCurrentBalance().add(tx.getAmount()));
+        } else {
+            wallet.setCurrentBalance(wallet.getCurrentBalance().subtract(tx.getAmount()));
+        }
+
+        walletRepository.save(wallet);
+        transactionRepository.delete(tx);
+    }
+
+    @Transactional
+    public Transactions updateTransaction(UUID transactionId, UUID userId, TransactionDTO dto) {
+
+        Transactions oldTx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new RuntimeException("Transaction không tồn tại"));
+
+        if (!oldTx.getUserId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền sửa giao dịch này");
+        }
+
+        Wallet wallet = oldTx.getWallet();
+
+        if (oldTx.getType() == TransactionType.EXPENSE) {
+            wallet.setCurrentBalance(wallet.getCurrentBalance().add(oldTx.getAmount())); // hoàn tiền chi
+        } else {
+            wallet.setCurrentBalance(wallet.getCurrentBalance().subtract(oldTx.getAmount())); // hoàn tiền thu
+        }
+
+        if (dto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(dto.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Hạng mục không tồn tại"));
+            oldTx.setCategory(category);
+        }
+
+        if (dto.getAmount() != null) {
+            oldTx.setAmount(dto.getAmount());
+        }
+
+        if (dto.getType() != null) {
+            oldTx.setType(TransactionType.valueOf(dto.getType()));
+        }
+
+        if (dto.getDescription() != null) {
+            oldTx.setDescription(dto.getDescription());
+        }
+
+        if (dto.getTransactionDate() != null) {
+            oldTx.setTransactionDate(dto.getTransactionDate());
+        }
+
+        BigDecimal newAmount = oldTx.getAmount();
+        TransactionType newType = oldTx.getType();
+
+        if (newType == TransactionType.EXPENSE) {
+            wallet.setCurrentBalance(wallet.getCurrentBalance().subtract(newAmount)); // chi
+        } else {
+            wallet.setCurrentBalance(wallet.getCurrentBalance().add(newAmount)); // thu
+        }
+
+        if (wallet.getCurrentBalance().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Số dư ví không thể âm sau khi cập nhật giao dịch");
+        }
+
+        walletRepository.save(wallet);
+        return transactionRepository.save(oldTx);
+    }
+
+    public Transactions getTransactionById(UUID transactionId, UUID userId) {
+        Transactions tx = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new RuntimeException("Transaction không tồn tại"));
+
+        if (!tx.getUserId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền xem giao dịch này");
+        }
+
+        return tx;
+    }
+
 }

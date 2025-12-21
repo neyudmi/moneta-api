@@ -1,7 +1,9 @@
 package com.example.expense_service.controllers;
 
+import com.example.expense_service.dtos.CategoryDto;
 import com.example.expense_service.dtos.CategoryGroupDto;
 import com.example.expense_service.dtos.ParentCategoryDTO;
+import com.example.expense_service.dtos.UpdateCategoryDTO;
 import com.example.expense_service.dtos.CreateCategoryDTO;
 import com.example.expense_service.services.CategoryService;
 import com.example.expense_service.services.CategoryGroupService;
@@ -51,4 +53,22 @@ public class CategoryController {
         categoryService.deleteCategory(categoryId, userId);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/update/{categoryId}")
+    public ResponseEntity<CategoryDto> updateCategory(
+            @PathVariable UUID categoryId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestBody UpdateCategoryDTO dto) {
+
+        Category category = categoryService.updateCategory(categoryId, userId, dto);
+
+        CategoryDto response = new CategoryDto(
+                category.getId(),
+                category.getName(),
+                category.getIcon().getFileName(),
+                category.getGroup().getId());
+
+        return ResponseEntity.ok(response);
+    }
+
 }

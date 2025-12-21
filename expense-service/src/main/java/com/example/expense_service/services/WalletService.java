@@ -9,4 +9,11 @@ public interface WalletService {
     Wallet createWallet(CreateWalletDTO dto, UUID userId);
 
     List<Wallet> getWalletsByUserId(UUID userId);
+
+    void deleteWallet(UUID userId, UUID walletId);
+
+    Wallet updateWallet(UUID userId, UUID walletId, CreateWalletDTO dto);
+
+    Wallet getWalletById(UUID userId, UUID walletId);
+
 }

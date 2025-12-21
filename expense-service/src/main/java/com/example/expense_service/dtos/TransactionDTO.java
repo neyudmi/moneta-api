@@ -19,4 +19,5 @@ public class TransactionDTO {
     private String description;
     private String type;
     private LocalDateTime transactionDate;
+
 }

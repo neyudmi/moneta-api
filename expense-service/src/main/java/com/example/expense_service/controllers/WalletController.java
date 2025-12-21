@@ -18,7 +18,7 @@ public class WalletController {
     @Autowired
     private WalletService walletService;
 
-    @PostMapping("add")
+    @PostMapping("/add")
     public ResponseEntity<Wallet> createWallet(
             @RequestBody CreateWalletDTO dto,
             @RequestHeader("X-User-Id") UUID userId) {
@@ -27,11 +27,40 @@ public class WalletController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newWallet);
     }
 
-    @GetMapping("all")
+    @GetMapping("/all")
     public ResponseEntity<List<Wallet>> getWalletsByUserId(
             @RequestHeader("X-User-Id") UUID userId) {
 
         List<Wallet> wallets = walletService.getWalletsByUserId(userId);
         return ResponseEntity.ok(wallets);
     }
+
+    @GetMapping("/{walletId}")
+    public ResponseEntity<Wallet> getWalletById(
+            @PathVariable UUID walletId,
+            @RequestHeader("X-User-Id") UUID userId) {
+
+        Wallet wallet = walletService.getWalletById(userId, walletId);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @DeleteMapping("/delete/{walletId}")
+    public ResponseEntity<?> deleteWallet(
+            @PathVariable UUID walletId,
+            @RequestHeader("X-User-Id") UUID userId) {
+
+        walletService.deleteWallet(userId, walletId);
+        return ResponseEntity.ok("Xóa ví thành công");
+    }
+
+    @PutMapping("/update/{walletId}")
+    public ResponseEntity<Wallet> updateWallet(
+            @PathVariable UUID walletId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestBody CreateWalletDTO dto) {
+
+        Wallet updatedWallet = walletService.updateWallet(userId, walletId, dto);
+        return ResponseEntity.ok(updatedWallet);
+    }
+
 }

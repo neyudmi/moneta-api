@@ -3,6 +3,7 @@ package com.example.expense_service.services;
 import com.example.expense_service.dtos.CategoryDto;
 import com.example.expense_service.dtos.CategoryGroupDto;
 import com.example.expense_service.dtos.CreateCategoryDTO;
+import com.example.expense_service.dtos.UpdateCategoryDTO;
 import com.example.expense_service.models.Category;
 import com.example.expense_service.models.CategoryGroup;
 import com.example.expense_service.models.Icon;
@@ -93,4 +94,34 @@ public class CategoryServiceImplement implements CategoryService {
     public void deleteCategory(UUID categoryId, UUID userId) {
         categoryRepository.deleteByIdAndUserId(categoryId, userId);
     }
+
+    @Override
+    public Category updateCategory(UUID categoryId, UUID userId, UpdateCategoryDTO dto) {
+
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + categoryId));
+
+        if (category.getUserId() != null && !category.getUserId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền sửa danh mục này");
+        }
+
+        if (dto.getName() != null && !dto.getName().isEmpty()) {
+            category.setName(dto.getName());
+        }
+
+        if (dto.getIconId() != null) {
+            Icon icon = iconRepository.findById(dto.getIconId())
+                    .orElseThrow(() -> new EntityNotFoundException("Icon not found: " + dto.getIconId()));
+            category.setIcon(icon);
+        }
+
+        if (dto.getGroupId() != null) {
+            CategoryGroup group = groupRepository.findById(dto.getGroupId())
+                    .orElseThrow(() -> new EntityNotFoundException("CategoryGroup not found: " + dto.getGroupId()));
+            category.setGroup(group);
+        }
+
+        return categoryRepository.save(category);
+    }
+
 }

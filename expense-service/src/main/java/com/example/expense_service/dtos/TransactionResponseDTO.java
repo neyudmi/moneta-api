@@ -20,6 +20,7 @@ public class TransactionResponseDTO {
     private UUID categoryId;
     private UUID userId;
     private LocalDateTime createdAt;
+    private String name;
 
     public TransactionResponseDTO() {
     }
