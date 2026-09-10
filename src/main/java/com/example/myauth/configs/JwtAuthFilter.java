@@ -9,9 +9,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
-
 import com.example.myauth.services.JwtService;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
@@ -46,21 +44,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
 
-            final String jwt = authHeader.substring(7); // lấy jwt
-            final String tokenType = jwtService.extractTokenType(jwt); // lấy loại token
-
+            final String jwt = authHeader.substring(7);
+            final String tokenType = jwtService.extractTokenType(jwt);
+            // Check type
             if (!"access".equals(tokenType)) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            final String userEmail = jwtService.extractUsername(jwt); // lấy email từ jwt
+            // Check backlist
+            if (jwtService.isBlacklisted(jwtService.extractTokenId(jwt))) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            final String userEmail = jwtService.extractUsername(jwt);
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
             if (userEmail != null && authentication == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail); // lấy thông tin user
-                                                                                                 // từ email
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

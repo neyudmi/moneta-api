@@ -24,10 +24,17 @@ public class VerificationService {
     private static final int MAX_RESENDS_PER_HOUR = 5;
     private static final int MAX_REQUESTS_PER_IP_PER_HOUR = 20;
     private static final int MAX_VERIFICATION_ATTEMPTS = 5;
+    // KEYS[1] là key mà java truyền vào, ARGV[1] là thời gian sống của key đó
+    // Tăng current lên 1
+    // current == 1 nghĩa là key chưa tồn tại, nên set expire cho key đó
+    // nếu current > 1 thì return current
     private static final DefaultRedisScript<Long> INCREMENT_WITH_TTL = new DefaultRedisScript<>(
             "local current = redis.call('INCR', KEYS[1]); " +
                     "if current == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; return current;",
             Long.class);
+
+    // KEYS[1] là key mà java truyền vào, ARGV[1] là code mà java truyền vào
+    // Nếu code đúng thì xóa key đó đi và return 1, nếu code sai thì return 0
     private static final DefaultRedisScript<Long> CONSUME_CODE = new DefaultRedisScript<>(
             "if redis.call('GET', KEYS[1]) == ARGV[1] then " +
                     "return redis.call('DEL', KEYS[1]); end; return 0;",
@@ -51,6 +58,7 @@ public class VerificationService {
     public void createVerificationCode(String email, String code) {
         try {
             String activeKey = activeVerificationKey(email);
+            // Lưu vào redis verification:active:{email} -> {code}, TTL 10 phút
             redisTemplate.opsForValue().set(activeKey, code, VERIFICATION_CODE_TTL);
         } catch (DataAccessException ex) {
             throw new RedisOperationException("Unable to store verification code.", ex);

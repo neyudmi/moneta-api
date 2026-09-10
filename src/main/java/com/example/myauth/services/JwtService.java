@@ -1,15 +1,22 @@
 package com.example.myauth.services;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import com.example.myauth.exceptions.RedisOperationException;
 
 import com.example.myauth.entities.User;
 
@@ -26,6 +33,16 @@ public class JwtService {
     private long jwtExpiration;
     @Value("${security.jwt.refresh-expiration-time}")
     private long refreshExpiration;
+    // Check token is blacklisted, if not, blacklist it with expiration
+    private static final DefaultRedisScript<Long> BLACKLIST_IF_NOT_PRESENT = new DefaultRedisScript<>(
+            "if redis.call('EXISTS', KEYS[1]) == 1 then return 0; end; " +
+                    "redis.call('SET', KEYS[1], '1', 'EX', ARGV[1]); return 1;",
+            Long.class);
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public JwtService(RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     // Nhóm get
     private SecretKey getSignInKey() {
@@ -50,6 +67,7 @@ public class JwtService {
         return Jwts
                 .builder()
                 .claims(extraClaims)
+                .id(UUID.randomUUID().toString())
                 .subject(userDetails.getUsername()) // lấy email làm subject
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
@@ -99,6 +117,10 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("tokenType", String.class));
     }
 
+    public String extractTokenId(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
     // Nhóm validate
 
     public boolean isTokenExpired(String token) {
@@ -109,6 +131,39 @@ public class JwtService {
         final String extractedUsername = extractUsername(token);
         final String username = userDetails.getUsername();
         return (extractedUsername.equals(username)) && userDetails.isEnabled() && !isTokenExpired(token);
+    }
+
+    // Nhóm blacklist
+
+    public String blacklistKey(String tokenId) {
+        return "auth:blacklist:" + tokenId;
+    }
+
+    public boolean isBlacklisted(String tokenId) {
+        if (tokenId == null || tokenId.isBlank()) {
+            return false;
+        }
+        try {
+            return Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey(tokenId)));
+        } catch (DataAccessException ex) {
+            throw new RedisOperationException("Unable to check token blacklist.", ex);
+        }
+    }
+
+    public boolean blacklistIfAbsent(String tokenId, Date expiration) {
+        long ttlSeconds = Duration.ofMillis(expiration.getTime() -
+                System.currentTimeMillis()).toSeconds();
+        if (tokenId == null || tokenId.isBlank() || ttlSeconds <= 0) {
+            return false;
+        }
+        try {
+            Long result = redisTemplate.execute(BLACKLIST_IF_NOT_PRESENT,
+                    List.of(blacklistKey(tokenId)),
+                    String.valueOf(ttlSeconds));
+            return Long.valueOf(1L).equals(result);
+        } catch (DataAccessException ex) {
+            throw new RedisOperationException("Unable to blacklist token.", ex);
+        }
     }
 
 }
