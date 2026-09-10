@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 import com.example.myauth.dtos.LoginRequestDto;
 import com.example.myauth.dtos.LoginResponseDto;
 import com.example.myauth.dtos.RegisterRequestDto;
-import com.example.myauth.dtos.ResendVerificationCodeDto;
+import com.example.myauth.dtos.ResendCodeRequestDto;
 import com.example.myauth.dtos.VerificationRequestDto;
 import com.example.myauth.entities.User;
 import com.example.myauth.services.AuthService;
@@ -33,6 +33,21 @@ public class AuthController {
         this.verificationTokenService = verificationTokenService;
         this.jwtService = jwtService;
 
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto userDto) {
+        User authenticatedUser = authService.login(userDto);
+        String accessToken = jwtService.generateToken(authenticatedUser);
+        String refreshToken = jwtService.generateRefreshToken(authenticatedUser);
+
+        LoginResponseDto responseDto = new LoginResponseDto(
+                authenticatedUser.getId(),
+                accessToken,
+                refreshToken,
+                jwtService.getJwtExpiration());
+
+        return ResponseEntity.ok(responseDto);
     }
 
     @PostMapping("/register")
@@ -56,27 +71,12 @@ public class AuthController {
     }
 
     @PostMapping("/resend-code")
-    public ResponseEntity<String> resendVerificationCode(@Valid @RequestBody ResendVerificationCodeDto requestDto) {
+    public ResponseEntity<String> resendVerificationCode(@Valid @RequestBody ResendCodeRequestDto requestDto) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         String clientAddress = attributes == null ? "unknown" : attributes.getRequest().getRemoteAddr();
         verificationTokenService.resendVerificationCode(requestDto.getEmail(), clientAddress);
         return ResponseEntity.accepted()
                 .body("If the account exists and is not verified, a verification code will be sent.");
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto userDto) {
-        User authenticatedUser = authService.login(userDto);
-        String accessToken = jwtService.generateToken(authenticatedUser);
-        String refreshToken = jwtService.generateRefreshToken(authenticatedUser);
-
-        LoginResponseDto responseDto = new LoginResponseDto(
-                authenticatedUser.getId(),
-                accessToken,
-                refreshToken,
-                jwtService.getJwtExpiration());
-
-        return ResponseEntity.ok(responseDto);
     }
 
 }

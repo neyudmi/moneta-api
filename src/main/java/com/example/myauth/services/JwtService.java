@@ -1,6 +1,7 @@
 package com.example.myauth.services;
 
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import com.example.myauth.exceptions.RedisOperationException;
@@ -46,7 +48,7 @@ public class JwtService {
 
     // Nhóm get
     private SecretKey getSignInKey() {
-        byte[] decodedKey = java.util.Base64.getDecoder().decode(secretKey);
+        byte[] decodedKey = Base64.getDecoder().decode(secretKey);
         return Keys.hmacShaKeyFor(decodedKey);
     }
 
@@ -163,6 +165,23 @@ public class JwtService {
             return Long.valueOf(1L).equals(result);
         } catch (DataAccessException ex) {
             throw new RedisOperationException("Unable to blacklist token.", ex);
+        }
+    }
+
+    public void validateLogoutTokens(String accessToken, String refreshToken) {
+        if (!"access".equals(extractTokenType(accessToken))
+                || !"refresh".equals(extractTokenType(refreshToken))) {
+            throw new BadCredentialsException("Invalid token type.");
+        }
+        if (isTokenExpired(accessToken) || isTokenExpired(refreshToken)) {
+            throw new BadCredentialsException("Invalid or expired token.");
+        }
+        if (extractTokenId(accessToken) == null
+                || extractTokenId(refreshToken) == null) {
+            throw new BadCredentialsException("Invalid token.");
+        }
+        if (!extractUsername(accessToken).equals(extractUsername(refreshToken))) {
+            throw new BadCredentialsException("Access and refresh tokens do not belong together.");
         }
     }
 

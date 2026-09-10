@@ -5,9 +5,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
+import com.example.myauth.dtos.LogoutRequestDto;
 import com.example.myauth.dtos.LoginResponseDto;
 import com.example.myauth.entities.User;
 import com.example.myauth.services.JwtService;
@@ -62,15 +65,27 @@ public class TokenController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
-        if (!authHeader.startsWith("Bearer ")) {
+    public ResponseEntity<Void> logout(
+            @RequestHeader(value = "Authorization") String authHeader,
+            @Valid @RequestBody LogoutRequestDto request) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new BadCredentialsException("Missing or invalid Authorization header.");
         }
 
-        String token = authHeader.substring(7);
+        String accessToken = authHeader.substring(7).trim();
+        String refreshToken = request.getRefreshToken().trim();
+        if (accessToken.isEmpty() || refreshToken.isEmpty()) {
+            throw new BadCredentialsException("Missing access or refresh token.");
+        }
+
+        jwtService.validateLogoutTokens(accessToken, refreshToken);
+
         jwtService.blacklistIfAbsent(
-                jwtService.extractTokenId(token),
-                jwtService.extractExpiration(token));
+                jwtService.extractTokenId(accessToken),
+                jwtService.extractExpiration(accessToken));
+        jwtService.blacklistIfAbsent(
+                jwtService.extractTokenId(refreshToken),
+                jwtService.extractExpiration(refreshToken));
         return ResponseEntity.noContent().build();
     }
 
