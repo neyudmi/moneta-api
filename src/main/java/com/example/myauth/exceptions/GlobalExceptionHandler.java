@@ -76,4 +76,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An unexpected error occurred.");
     }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<String> handleInvalidPassword(InvalidPasswordException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
 }

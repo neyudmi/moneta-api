@@ -115,6 +115,10 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    public Date extractIssuedAt(String token) {
+        return extractClaim(token, Claims::getIssuedAt);
+    }
+
     public String extractTokenType(String token) {
         return extractClaim(token, claims -> claims.get("tokenType", String.class));
     }
@@ -132,7 +136,18 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String extractedUsername = extractUsername(token);
         final String username = userDetails.getUsername();
-        return (extractedUsername.equals(username)) && userDetails.isEnabled() && !isTokenExpired(token);
+        if (!extractedUsername.equals(username) || !userDetails.isEnabled() || isTokenExpired(token)) {
+            return false;
+        }
+
+        if (userDetails instanceof User user
+                && user.getPasswordLastChanged() != null
+                && !extractIssuedAt(token).toInstant().isAfter(user.getPasswordLastChanged())) {
+            blacklistIfAbsent(extractTokenId(token), extractExpiration(token));
+            return false;
+        }
+
+        return true;
     }
 
     // Nhóm blacklist

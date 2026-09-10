@@ -24,16 +24,16 @@ import com.example.myauth.services.VerificationService;
 public class AuthController {
 
     private final AuthService authService;
-    private final VerificationService verificationTokenService;
+    private final VerificationService verificationService;
     private final JwtService jwtService;
 
-    public AuthController(AuthService authService, VerificationService verificationTokenService,
+    public AuthController(AuthService authService, VerificationService verificationService,
             JwtService jwtService) {
         this.authService = authService;
-        this.verificationTokenService = verificationTokenService;
+        this.verificationService = verificationService;
         this.jwtService = jwtService;
 
-    }
+    }   
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto userDto) {
@@ -61,7 +61,7 @@ public class AuthController {
     public ResponseEntity<String> verifyEmail(@Valid @RequestBody VerificationRequestDto requestDto) {
         String email = requestDto.getEmail().trim().toLowerCase(java.util.Locale.ROOT);
         String code = requestDto.getCode();
-        boolean isValid = verificationTokenService.validateVerificationCode(email, code);
+        boolean isValid = verificationService.validateVerificationCode(email, code);
         if (isValid) {
             return ResponseEntity.ok("Your account has been verified successfully.");
         } else {
@@ -74,7 +74,7 @@ public class AuthController {
     public ResponseEntity<String> resendVerificationCode(@Valid @RequestBody ResendCodeRequestDto requestDto) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         String clientAddress = attributes == null ? "unknown" : attributes.getRequest().getRemoteAddr();
-        verificationTokenService.resendVerificationCode(requestDto.getEmail(), clientAddress);
+        verificationService.resendVerificationCode(requestDto.getEmail(), clientAddress);
         return ResponseEntity.accepted()
                 .body("If the account exists and is not verified, a verification code will be sent.");
     }

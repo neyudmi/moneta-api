@@ -22,7 +22,7 @@ public class RegisterRequestDto {
     @Size(max = 50)
     private String email;
     @NotBlank
-    @Size(min = 8, max = 72)
+    @Size(min = 8, message = "Password must be at least 8 characters long")
     private String password;
     @NotNull
     private LocalDate birthDay;
