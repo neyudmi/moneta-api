@@ -1,6 +1,7 @@
 package com.example.myauth.services;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,6 +39,15 @@ public class UserService {
         }
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setPasswordLastChanged(Instant.now());
+        return userRepository.save(user);
+    }
+
+    public User updateUser(UUID userId, String fullName, LocalDate birthDay, String gender) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        user.setFullName(fullName);
+        user.setBirthDay(birthDay);
+        user.setGender(gender);
         return userRepository.save(user);
     }
 

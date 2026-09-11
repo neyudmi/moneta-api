@@ -68,4 +68,12 @@ public class AuthService {
         return user;
     }
 
+    public User forgotPassword(String email) {
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + normalizedEmail));
+
+        return user;
+    }
+
 }

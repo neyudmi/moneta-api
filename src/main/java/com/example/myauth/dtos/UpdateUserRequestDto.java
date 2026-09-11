@@ -1,6 +1,7 @@
 package com.example.myauth.dtos;
 
 import java.time.LocalDate;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +9,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InforUserDto {
+public class UpdateUserRequestDto {
     private String fullName;
-    private String email;
     private LocalDate birthDay;
     private String gender;
 }
