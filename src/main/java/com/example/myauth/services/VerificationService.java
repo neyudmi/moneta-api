@@ -9,77 +9,38 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.example.myauth.entities.User;
 import com.example.myauth.exceptions.RedisOperationException;
 import com.example.myauth.exceptions.VerificationCodeRateLimitException;
+import com.example.myauth.entities.User;
 import com.example.myauth.repositories.UserRepository;
 import com.example.myauth.utils.RandomVerificationCode;
 
 @Service
 public class VerificationService {
-
+    private final RedisTemplate<String, String> redisTemplate;
     private static final Duration VERIFICATION_CODE_TTL = Duration.ofMinutes(10);
     private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
-    private static final Duration RESEND_WINDOW = Duration.ofHours(1);
-    private static final int MAX_RESENDS_PER_HOUR = 5;
-    private static final int MAX_REQUESTS_PER_IP_PER_HOUR = 20;
-    private static final int MAX_VERIFICATION_ATTEMPTS = 5;
-    // KEYS[1] là key mà java truyền vào, ARGV[1] là thời gian sống của key đó
-    // Tăng current lên 1
-    // current == 1 nghĩa là key chưa tồn tại, nên set expire cho key đó
-    // nếu current > 1 thì return current
-    private static final DefaultRedisScript<Long> INCREMENT_WITH_TTL = new DefaultRedisScript<>(
-            "local current = redis.call('INCR', KEYS[1]); " +
-                    "if current == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; return current;",
-            Long.class);
-
-    // KEYS[1] là key mà java truyền vào, ARGV[1] là code mà java truyền vào
-    // Nếu code đúng thì xóa key đó đi và return 1, nếu code sai thì return 0
     private static final DefaultRedisScript<Long> CONSUME_CODE = new DefaultRedisScript<>(
             "if redis.call('GET', KEYS[1]) == ARGV[1] then " +
                     "return redis.call('DEL', KEYS[1]); end; return 0;",
             Long.class);
 
-    private final UserRepository userRepository;
-    private final RedisTemplate<String, String> redisTemplate;
-    private final EmailService emailService;
-
-    public VerificationService(UserRepository userRepository, RedisTemplate<String, String> redisTemplate,
-            EmailService emailService) {
-        this.userRepository = userRepository;
+    public VerificationService(RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
-        this.emailService = emailService;
     }
 
-    private String activeVerificationKey(String email) {
-        return "verification:active:" + email;
-    }
-
-    public void createVerificationCode(String email, String code) {
+    // verifcation:active:<email> -> <code> with TTL 10 minutes
+    private void createCode(String email, String code) {
         try {
-            String activeKey = activeVerificationKey(email);
-            // Lưu vào redis verification:active:{email} -> {code}, TTL 10 phút
-            redisTemplate.opsForValue().set(activeKey, code, VERIFICATION_CODE_TTL);
+            String key = "verification:active:" + email;
+            redisTemplate.opsForValue().set(key, code, VERIFICATION_CODE_TTL);
         } catch (DataAccessException ex) {
             throw new RedisOperationException("Unable to store verification code.", ex);
         }
     }
 
-    // Tăng 1 check rate limit, nếu vượt quá thì throw exception
-    private void enforceHourlyLimit(String key, int maxRequests) {
-        Long requests = redisTemplate.execute(INCREMENT_WITH_TTL, List.of(key),
-                String.valueOf(RESEND_WINDOW.toSeconds()));
-        if (requests != null && requests > maxRequests) {
-            Long remaining = redisTemplate.getExpire(key);
-            throw new VerificationCodeRateLimitException(Math.max(1, remaining == null ? 3600 : remaining));
-        }
-    }
-
-    private void applyRateLimits(String email, String clientAddress) {
+    private void applyResendCooldown(String email) {
         try {
-            enforceHourlyLimit("verification:resend:hourly:" + email, MAX_RESENDS_PER_HOUR);
-            enforceHourlyLimit("verification:resend:ip:" + (clientAddress == null ? "unknown" : clientAddress),
-                    MAX_REQUESTS_PER_IP_PER_HOUR);
             String cooldownKey = "verification:resend:cooldown:" + email;
             Boolean acquired = redisTemplate.opsForValue().setIfAbsent(
                     cooldownKey, "1", RESEND_COOLDOWN);
@@ -88,7 +49,6 @@ public class VerificationService {
                 Long remaining = redisTemplate.getExpire(cooldownKey);
                 throw new VerificationCodeRateLimitException(Math.max(1, remaining == null ? 60 : remaining));
             }
-
         } catch (VerificationCodeRateLimitException ex) {
             throw ex;
         } catch (DataAccessException ex) {
@@ -96,44 +56,25 @@ public class VerificationService {
         }
     }
 
-    public boolean validateVerificationCode(String email, String code) {
-        String normalizedEmail = normalizeEmail(email);
+    public String issueCode(String email) {
+        String code = RandomVerificationCode.generateCode();
+
+        applyResendCooldown(email);
+        createCode(email, code);
+        return code;
+    }
+
+    public boolean consumeCode(String email, String code) {
         try {
-            String key = activeVerificationKey(normalizedEmail);
+            String key = "verification:active:" + email;
             Long consumed = redisTemplate.execute(CONSUME_CODE, List.of(key), code);
             if (consumed == null || consumed == 0) {
-                enforceHourlyLimit("verification:attempts:" + normalizedEmail, MAX_VERIFICATION_ATTEMPTS);
                 return false;
             }
-
-            User user = userRepository.findByEmail(normalizedEmail).orElse(null);
-            if (user == null) {
-                return false;
-            }
-            user.setEnabled(true);
-            userRepository.save(user);
-            redisTemplate.delete("verification:attempts:" + normalizedEmail);
             return true;
         } catch (DataAccessException ex) {
             throw new RedisOperationException("Unable to validate verification code.", ex);
         }
-    }
-
-    public void resendVerificationCode(String email, String clientAddress) {
-        String normalizedEmail = normalizeEmail(email);
-        applyRateLimits(normalizedEmail, clientAddress);
-        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
-        if (user == null || user.isEnabled()) {
-            return;
-        }
-
-        String code = RandomVerificationCode.generateCode();
-        createVerificationCode(normalizedEmail, code);
-        emailService.sendVerificationEmail(normalizedEmail, user.getFullName(), code);
-    }
-
-    private String normalizeEmail(String email) {
-        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 
 }

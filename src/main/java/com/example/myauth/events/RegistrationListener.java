@@ -7,7 +7,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.example.myauth.entities.User;
 import com.example.myauth.services.EmailService;
 import com.example.myauth.services.VerificationService;
-import com.example.myauth.utils.RandomVerificationCode;
 
 @Component
 // Lắng nghe RegistractionEvent
@@ -26,10 +25,7 @@ public class RegistrationListener {
 
         User user = event.getUser();
 
-        String code = RandomVerificationCode.generateCode();
-
-        // Lưu code vào Redis
-        verificationService.createVerificationCode(user.getEmail(), code);
+        String code = verificationService.issueCode(user.getEmail());
 
         // Gửi email
         emailService.sendVerificationEmail(

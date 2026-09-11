@@ -1,8 +1,6 @@
 package com.example.myauth.controllers;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,11 +57,11 @@ public class AuthController {
                 .body("User registered successfully. Please check your email for verification.");
     }
 
-    @PostMapping("/verify-email")
+    @PostMapping("/active")
     public ResponseEntity<String> verifyEmail(@Valid @RequestBody VerificationRequestDto requestDto) {
         String email = requestDto.getEmail().trim().toLowerCase(java.util.Locale.ROOT);
         String code = requestDto.getCode();
-        boolean isValid = verificationService.validateVerificationCode(email, code);
+        boolean isValid = authService.activateUser(email, code);
         if (isValid) {
             return ResponseEntity.ok("Your account has been verified successfully.");
         } else {
@@ -74,16 +72,14 @@ public class AuthController {
 
     @PostMapping("/resend-code")
     public ResponseEntity<String> resendVerificationCode(@Valid @RequestBody ResendCodeRequestDto requestDto) {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        String clientAddress = attributes == null ? "unknown" : attributes.getRequest().getRemoteAddr();
-        verificationService.resendVerificationCode(requestDto.getEmail(), clientAddress);
+        authService.resendCode(requestDto.getEmail());
         return ResponseEntity.accepted()
-                .body("If the account exists and is not verified, a verification code will be sent.");
+                .body("Code resent successfully. Please check your email for the new verification code.");
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto requestDto) {
-        authService.sendPasswordResetEmail(requestDto.getEmail());
+        authService.sendPasswordResetCode(requestDto.getEmail());
         return ResponseEntity.accepted()
                 .body("If the account exists, a password reset code will be sent.");
     }
