@@ -14,6 +14,8 @@ import com.example.myauth.dtos.LoginResponseDto;
 import com.example.myauth.dtos.RegisterRequestDto;
 import com.example.myauth.dtos.ResendCodeRequestDto;
 import com.example.myauth.dtos.VerificationRequestDto;
+import com.example.myauth.dtos.ForgotPasswordRequestDto;
+import com.example.myauth.dtos.ResetPasswordRequestDto;
 import com.example.myauth.entities.User;
 import com.example.myauth.services.AuthService;
 import com.example.myauth.services.JwtService;
@@ -33,7 +35,7 @@ public class AuthController {
         this.verificationService = verificationService;
         this.jwtService = jwtService;
 
-    }   
+    }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto userDto) {
@@ -77,6 +79,22 @@ public class AuthController {
         verificationService.resendVerificationCode(requestDto.getEmail(), clientAddress);
         return ResponseEntity.accepted()
                 .body("If the account exists and is not verified, a verification code will be sent.");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto requestDto) {
+        authService.sendPasswordResetEmail(requestDto.getEmail());
+        return ResponseEntity.accepted()
+                .body("If the account exists, a password reset code will be sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequestDto requestDto) {
+        authService.resetPassword(
+                requestDto.getEmail(),
+                requestDto.getCode(),
+                requestDto.getNewPassword());
+        return ResponseEntity.ok("Password reset successfully. Please log in again.");
     }
 
 }

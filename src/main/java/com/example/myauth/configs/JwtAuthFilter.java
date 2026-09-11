@@ -8,7 +8,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 import com.example.myauth.services.JwtService;
 
 import io.jsonwebtoken.JwtException;
@@ -21,15 +20,12 @@ import lombok.NonNull;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private final HandlerExceptionResolver handlerExceptionResolver;
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
 
-    public JwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService,
-            HandlerExceptionResolver handlerExceptionResolver) {
+    public JwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
-        this.handlerExceptionResolver = handlerExceptionResolver;
     }
 
     @Override

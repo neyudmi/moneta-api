@@ -50,4 +50,22 @@ public class EmailService {
         }
     }
 
+    public void sendPasswordResetEmail(String email, String fullName, String code) {
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+        context.setVariable("verificationCode", code);
+
+        String htmlMessage = templateEngine.process("reset-password-email", context);
+        MimeMessage message = emailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(email);
+            helper.setSubject("Đặt lại mật khẩu Moneta");
+            helper.setText(htmlMessage, true);
+            emailSender.send(message);
+        } catch (MessagingException | RuntimeException e) {
+            throw new EmailSendingException("Failed to send password reset email.", e);
+        }
+    }
+
 }

@@ -81,4 +81,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleInvalidPassword(InvalidPasswordException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
 }
