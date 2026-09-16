@@ -17,20 +17,16 @@ import com.example.myauth.dtos.ResetPasswordRequestDto;
 import com.example.myauth.entities.User;
 import com.example.myauth.services.AuthService;
 import com.example.myauth.services.JwtService;
-import com.example.myauth.services.VerificationService;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
-    private final VerificationService verificationService;
     private final JwtService jwtService;
 
-    public AuthController(AuthService authService, VerificationService verificationService,
-            JwtService jwtService) {
+    public AuthController(AuthService authService, JwtService jwtService) {
         this.authService = authService;
-        this.verificationService = verificationService;
         this.jwtService = jwtService;
 
     }

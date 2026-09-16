@@ -1,6 +1,8 @@
 HELP.md
 /.github/
 target/
+.env
+src/main/resources/keys/
 .._myauth.worktrees_refresh-token-blacklist-optimization_target_test-classes
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

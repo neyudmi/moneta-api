@@ -2,7 +2,6 @@ package com.example.myauth.services;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -11,8 +10,6 @@ import org.springframework.stereotype.Service;
 
 import com.example.myauth.exceptions.RedisOperationException;
 import com.example.myauth.exceptions.VerificationCodeRateLimitException;
-import com.example.myauth.entities.User;
-import com.example.myauth.repositories.UserRepository;
 import com.example.myauth.utils.RandomVerificationCode;
 
 @Service

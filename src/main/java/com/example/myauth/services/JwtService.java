@@ -1,7 +1,6 @@
 package com.example.myauth.services;
 
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +8,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
-import javax.crypto.SecretKey;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -23,14 +23,12 @@ import com.example.myauth.exceptions.RedisOperationException;
 import com.example.myauth.entities.User;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 
 @Service
 public class JwtService {
 
-    @Value("${security.jwt.secret-key}")
-    private String secretKey;
     @Value("${security.jwt.expiration-time}")
     private long jwtExpiration;
     @Value("${security.jwt.refresh-expiration-time}")
@@ -41,15 +39,13 @@ public class JwtService {
                     "redis.call('SET', KEYS[1], '1', 'EX', ARGV[1]); return 1;",
             Long.class);
     private final RedisTemplate<String, String> redisTemplate;
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
 
-    public JwtService(RedisTemplate<String, String> redisTemplate) {
+    public JwtService(RedisTemplate<String, String> redisTemplate, PrivateKey jwtPrivateKey, PublicKey jwtPublicKey) {
         this.redisTemplate = redisTemplate;
-    }
-
-    // Nhóm get
-    private SecretKey getSignInKey() {
-        byte[] decodedKey = Base64.getDecoder().decode(secretKey);
-        return Keys.hmacShaKeyFor(decodedKey);
+        this.privateKey = jwtPrivateKey;
+        this.publicKey = jwtPublicKey;
     }
 
     public long getJwtExpiration() {
@@ -73,7 +69,7 @@ public class JwtService {
                 .subject(userDetails.getUsername()) // lấy email làm subject
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSignInKey())
+                .signWith(privateKey) // sign with private key
                 .compact();
     }
 
@@ -96,7 +92,7 @@ public class JwtService {
     private Claims extractAllClaims(String token) {
         return Jwts
                 .parser()
-                .verifyWith(getSignInKey())
+                .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -134,20 +130,34 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String extractedUsername = extractUsername(token);
-        final String username = userDetails.getUsername();
-        if (!extractedUsername.equals(username) || !userDetails.isEnabled() || isTokenExpired(token)) {
+        try {
+            Claims claims = extractAllClaims(token);
+
+            String extractedUsername = claims.getSubject();
+
+            if (!extractedUsername.equals(userDetails.getUsername())
+                    || !userDetails.isEnabled()
+                    || claims.getExpiration().before(new Date())) {
+                return false;
+            }
+
+            if (userDetails instanceof User user
+                    && user.getPasswordLastChanged() != null
+                    && !claims.getIssuedAt().toInstant()
+                            .isAfter(user.getPasswordLastChanged())) {
+
+                blacklistIfAbsent(
+                        claims.getId(),
+                        claims.getExpiration());
+
+                return false;
+            }
+
+            return true;
+
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
-
-        if (userDetails instanceof User user
-                && user.getPasswordLastChanged() != null
-                && !extractIssuedAt(token).toInstant().isAfter(user.getPasswordLastChanged())) {
-            blacklistIfAbsent(extractTokenId(token), extractExpiration(token));
-            return false;
-        }
-
-        return true;
     }
 
     // Nhóm blacklist
