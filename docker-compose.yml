@@ -1,0 +1,173 @@
+services:
+  mysql-expense:
+    image: mysql:8.0
+    container_name: mysql-expense
+    # Publish port 3306 of the container to port 3307 on the host machine
+    ports:
+      - "3307:3306"
+    environment:
+      # Tạo và đặt password quản trị cho user root
+      MYSQL_ROOT_PASSWORD: rootpassword
+      # Tạo database name là expensedb
+      MYSQL_DATABASE: expensedb
+      # Tạo user và password cho user application
+      MYSQL_USER: expenseuser
+      MYSQL_PASSWORD: expensepass
+      # Mount volume để lưu trữ dữ liệu của MySQL
+    volumes:
+      - mysql-expense-data:/var/lib/mysql
+      # Thêm service vào netwrok
+    networks:
+      - backend-net
+      # Kiểm tra đã sẵn sàng nhận connections chưa
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpassword",
+        ]
+      interval: 10s # 10s kiểm tra 1 lần
+      timeout: 5s # Nếu không nhận được response trong 5s thì coi như thất bại
+      retries: 5 # Thử lại 5 lần trước khi coi như service không sẵn sàng
+      start_period: 30s # Chờ 30s trước khi healthcheck
+
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: authdb
+      MYSQL_USER: authuser
+      MYSQL_PASSWORD: authpass
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
+    networks:
+      - backend-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7.0
+    container_name: redis-auth
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  auth-service:
+    image: zrua/auth-service:1.0.0
+    container_name: auth-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SECURITY_JWT_PRIVATE_KEY_PATH: classpath:keys/private_key.pem
+      SECURITY_JWT_PUBLIC_KEY_PATH: classpath:keys/public_key.pem
+      SECURITY_JWT_EXPIRATION_TIME: 900000
+      SECURITY_JWT_REFRESH_EXPIRATION_TIME: 259200000
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/authdb
+      SPRING_DATASOURCE_USERNAME: authuser
+      SPRING_DATASOURCE_PASSWORD: authpass
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+    networks:
+      - backend-net
+
+  expense-service:
+    image: zrua/expense-service:1.0.0
+    container_name: expense-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql-expense:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SECURITY_JWT_PUBLIC_KEY_PATH: classpath:keys/public_key.pem
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-expense:3306/expensedb
+      SPRING_DATASOURCE_USERNAME: expenseuser
+      SPRING_DATASOURCE_PASSWORD: expensepass
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+    networks:
+      - backend-net
+
+  api-gateway:
+    image: zrua/api-gateway:1.0.0
+    container_name: api-gateway
+    ports:
+      - "80:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      expense-service:
+        condition: service_started
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: auth-service
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://auth-service:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/auth/**,/users/**
+      SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0: PreserveHostHeader
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: expense-service
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://expense-service:8081
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/expense/**
+      SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED: false
+      SECURITY_JWT_PRIVATE_KEY_PATH: classpath:keys/private_key.pem
+      SECURITY_JWT_PUBLIC_KEY_PATH: classpath:keys/public_key.pem
+      SECURITY_JWT_EXPIRATION_TIME: 3600000
+      SECURITY_JWT_REFRESH_EXPIRATION_TIME: 259200000
+      AUTH_SERVICE_URL: http://auth-service:8080
+    networks:
+      - backend-net
+
+# Định nghĩa volumes để lưu trữ dữ liệu của các service
+volumes:
+  mysql-expense-data:
+  mysql-auth-data:
+  redis-data:
+  rabbitmq-data:
+
+# Tạo network riêng để các service internal có thể giao tiếp với nhau
+networks:
+  backend-net:
+    driver: bridge
