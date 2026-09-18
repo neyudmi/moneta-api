@@ -10,8 +10,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import jakarta.servlet.http.HttpServletResponse;
 
-@Configuration // Khai báo lớp này là một lớp cấu hình Spring
-@EnableWebSecurity // Kích hoạt bảo mật web Spring Security
+@Configuration
+@EnableWebSecurity
 public class SecurityConfig {
         private final JwtAuthFilter jwtAuthFilter;
 
@@ -24,6 +24,7 @@ public class SecurityConfig {
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(request -> request
+                                                .requestMatchers("/auth/logout").authenticated()
                                                 .requestMatchers("/auth/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
