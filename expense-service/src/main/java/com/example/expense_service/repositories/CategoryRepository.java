@@ -17,7 +17,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     // Check categories child exists
     boolean existsByUserId(UUID userId);
 
-    // Find categories by userId (get child categories)
+    // Find child categories by userId
     List<Category> findByUserId(UUID userId);
 
     // Find parent categories (userId is null)
