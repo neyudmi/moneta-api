@@ -29,18 +29,18 @@ public class CategoryController {
     }
 
     @GetMapping("/{categoryId}")
-    public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable UUID categoryId,
+    public ResponseEntity<CategoryResponseDTO> getCategoryById(
+            @PathVariable UUID categoryId,
             @AuthenticationPrincipal UUID userId) {
         CategoryResponseDTO category = categoryService.getCategoryById(categoryId, userId);
         return ResponseEntity.ok(category);
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponseDTO> createCategory(@AuthenticationPrincipal UUID userId,
+    public ResponseEntity<CategoryResponseDTO> createCategory(
+            @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody CategoryRequestDTO categoryRequest) {
-        CategoryResponseDTO category = categoryService.createCategory(userId, categoryRequest.getName(),
-                categoryRequest.getIconId(),
-                categoryRequest.getParentId());
+        CategoryResponseDTO category = categoryService.createCategory(userId, categoryRequest);
         return ResponseEntity.status(201).body(category);
     }
 
@@ -52,9 +52,7 @@ public class CategoryController {
         CategoryResponseDTO category = categoryService.updateCategory(
                 categoryId,
                 userId,
-                categoryRequest.getName(),
-                categoryRequest.getIconId(),
-                categoryRequest.getParentId());
+                categoryRequest);
         return ResponseEntity.ok(category);
     }
 
@@ -62,7 +60,7 @@ public class CategoryController {
     public ResponseEntity<Void> deleteCategory(
             @PathVariable UUID categoryId,
             @AuthenticationPrincipal UUID userId) {
-        categoryService.deleteCategory(categoryId, userId);
+        categoryService.deleteCategory(userId, categoryId);
         return ResponseEntity.noContent().build();
     }
 

@@ -1,5 +1,6 @@
 package com.example.expense_service.services;
 
+import com.example.expense_service.dtos.CategoryRequestDTO;
 import com.example.expense_service.dtos.CategoryResponseDTO;
 import com.example.expense_service.entities.Category;
 import com.example.expense_service.entities.Icon;
@@ -47,7 +48,7 @@ public class CategoryService {
                 .toList();
     }
 
-    public CategoryResponseDTO getCategoryById(UUID categoryId, UUID userId) {
+    public CategoryResponseDTO getCategoryById(UUID userId, UUID categoryId) {
         Category category = categoryRepository.findById(categoryId)
                 .filter(
                         cate -> cate.getUserId() == null || cate.getUserId().equals(userId))
@@ -56,8 +57,11 @@ public class CategoryService {
         return toResponse(category);
     }
 
-    @Transactional
-    public CategoryResponseDTO createCategory(UUID userId, String name, UUID iconId, UUID parentId) {
+    public CategoryResponseDTO createCategory(UUID userId, CategoryRequestDTO categoryRequestDTO) {
+        String name = categoryRequestDTO.getName();
+        UUID iconId = categoryRequestDTO.getIconId();
+        UUID parentId = categoryRequestDTO.getParentId();
+
         requireForCategory(name, iconId, parentId);
         requireForUser(userId);
 
@@ -82,7 +86,11 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryResponseDTO updateCategory(UUID categoryId, UUID userId, String name, UUID iconId, UUID parentId) {
+    public CategoryResponseDTO updateCategory(UUID userId, UUID categoryId, CategoryRequestDTO categoryRequestDTO) {
+        String name = categoryRequestDTO.getName();
+        UUID iconId = categoryRequestDTO.getIconId();
+        UUID parentId = categoryRequestDTO.getParentId();
+
         requireForUser(userId);
         requireForCategory(name, iconId, parentId);
 
@@ -110,7 +118,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public void deleteCategory(UUID categoryId, UUID userId) {
+    public void deleteCategory(UUID userId, UUID categoryId) {
         requireForUser(userId);
         Category category = categoryRepository
                 .findByIdAndUserId(categoryId, userId)
