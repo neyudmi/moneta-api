@@ -3,6 +3,8 @@ package com.example.expense_service.services;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.example.expense_service.dtos.WalletRequestDTO;
 import com.example.expense_service.dtos.WalletResponseDTO;
 import com.example.expense_service.entities.Wallet;
@@ -11,6 +13,7 @@ import com.example.expense_service.repositories.WalletRepository;
 
 import jakarta.transaction.Transactional;
 
+@Service
 public class WalletService {
     private final WalletRepository walletRepository;
 
