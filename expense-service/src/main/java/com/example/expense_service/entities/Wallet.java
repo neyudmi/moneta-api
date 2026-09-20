@@ -29,9 +29,6 @@ public class Wallet {
     @Column(name = "initial_balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal initialBalance;
 
-    @Column(name = "current_balance", nullable = false, precision = 19, scale = 2)
-    private BigDecimal currentBalance;
-
     private String description;
 
     public enum WalletType {
