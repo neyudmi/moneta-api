@@ -5,6 +5,9 @@ import com.example.expense_service.entities.Category;
 import com.example.expense_service.entities.Icon;
 import com.example.expense_service.repositories.CategoryRepository;
 import com.example.expense_service.repositories.IconRepository;
+import com.example.expense_service.exceptions.BadRequestException;
+import com.example.expense_service.exceptions.ResourceNotFoundException;
+import com.example.expense_service.exceptions.UnauthorizedException;
 
 import jakarta.transaction.Transactional;
 
@@ -26,7 +29,9 @@ public class CategoryService {
 
     @Transactional
     public List<CategoryResponseDTO> getAllCategories(UUID userId) {
+        requireForUser(userId);
 
+        // Create default categories for the user if they don't exist
         if (!categoryRepository.existsByUserId(userId)) {
             createDefaultCategories(userId);
         }
@@ -40,6 +45,97 @@ public class CategoryService {
                 children.stream())
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public CategoryResponseDTO getCategoryById(UUID categoryId, UUID userId) {
+        Category category = categoryRepository.findById(categoryId)
+                .filter(
+                        cate -> cate.getUserId() == null || cate.getUserId().equals(userId))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Category not found: " + categoryId));
+        return toResponse(category);
+    }
+
+    @Transactional
+    public CategoryResponseDTO createCategory(UUID userId, String name, UUID iconId, UUID parentId) {
+        requireForCategory(name, iconId, parentId);
+        requireForUser(userId);
+
+        Icon icon = iconRepository
+                .findById(iconId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Icon not found: " + iconId));
+
+        Category parent = categoryRepository
+                .findById(parentId)
+                .filter(cate -> cate.getUserId() == null)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Parent category not found: " + parentId));
+
+        Category category = new Category(
+                userId,
+                name,
+                icon,
+                parent);
+
+        return toResponse(categoryRepository.save(category));
+    }
+
+    @Transactional
+    public CategoryResponseDTO updateCategory(UUID categoryId, UUID userId, String name, UUID iconId, UUID parentId) {
+        requireForUser(userId);
+        requireForCategory(name, iconId, parentId);
+
+        Category category = categoryRepository
+                .findByIdAndUserId(categoryId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Category not found: " + categoryId));
+
+        Icon icon = iconRepository
+                .findById(iconId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Icon not found: " + iconId));
+
+        Category parent = categoryRepository
+                .findById(parentId)
+                .filter(cate -> cate.getUserId() == null)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Parent category not found: " + parentId));
+
+        category.setName(name);
+        category.setIcon(icon);
+        category.setParent(parent);
+
+        return toResponse(category);
+    }
+
+    @Transactional
+    public void deleteCategory(UUID categoryId, UUID userId) {
+        requireForUser(userId);
+        Category category = categoryRepository
+                .findByIdAndUserId(categoryId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
+
+        categoryRepository.delete(category);
+    }
+
+    private void requireForUser(UUID userId) {
+        if (userId == null) {
+            throw new UnauthorizedException(
+                    "Authenticated user is required");
+        }
+    }
+
+    private void requireForCategory(String name, UUID iconId, UUID parentId) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new BadRequestException("Category name is required");
+        }
+        if (iconId == null) {
+            throw new BadRequestException("Icon is required");
+        }
+        if (parentId == null) {
+            throw new BadRequestException("Parent category is required");
+        }
     }
 
     private void createDefaultCategories(UUID userId) {
@@ -165,8 +261,6 @@ public class CategoryService {
         return new CategoryResponseDTO(
                 category.getId(),
                 category.getName(),
-                category.getIcon().getId(),
-                category.getIcon().getName(),
                 category.getIcon().getFileName(),
                 category.getParent() != null
                         ? category.getParent().getId()
