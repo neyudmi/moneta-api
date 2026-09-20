@@ -14,16 +14,22 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     // Count parent categories
     long countByUserIdIsNull();
 
-    // Check categories child exists
-    boolean existsByUserId(UUID userId);
+    // Check if a category with the given parentId exists
+    boolean existsByParentId(UUID parentId);
 
-    // Find categories by userId (get child categories)
-    List<Category> findByUserId(UUID userId);
-
-    // Find parent categories (userId is null)
+    // Find all parent categories
     List<Category> findByUserIdIsNull();
 
-    // Find parent categories by category name
+    // Find one parent category by category name
     Optional<Category> findByName(String name);
+
+    // Check child category of a specific user exists
+    boolean existsByUserId(UUID userId);
+
+    // Find all child categories of a specific user
+    List<Category> findByUserId(UUID userId);
+
+    // Find one category of a specific user by categoryId
+    Optional<Category> findByIdAndUserId(UUID categoryId, UUID userId);
 
 }
