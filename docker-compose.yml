@@ -3,8 +3,8 @@ services:
     image: mysql:8.0
     container_name: mysql-expense
     # Publish port 3306 of the container to port 3307 on the host machine
-    ports:
-      - "3307:3306"
+    # ports:
+    #   - "3307:3306"
     environment:
       # Tạo và đặt password quản trị cho user root
       MYSQL_ROOT_PASSWORD: rootpassword
@@ -40,8 +40,8 @@ services:
   mysql-auth:
     image: mysql:8.0
     container_name: mysql-auth
-    ports:
-      - "3306:3306"
+    # ports:
+    #   - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: authdb
@@ -71,8 +71,8 @@ services:
   redis:
     image: redis:7.0
     container_name: redis-auth
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -87,8 +87,8 @@ services:
   auth-service:
     image: zrua/auth-service:1.0.0
     container_name: auth-service
-    ports:
-      - "8080:8080"
+    # ports:
+    #   - "8080:8080"
     depends_on:
       mysql-auth:
         condition: service_healthy
@@ -111,8 +111,8 @@ services:
   expense-service:
     image: zrua/expense-service:1.0.0
     container_name: expense-service
-    ports:
-      - "8081:8081"
+    # ports:
+    #   - "8081:8081"
     depends_on:
       mysql-expense:
         condition: service_healthy
@@ -144,13 +144,13 @@ services:
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: auth-service
-      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://auth-service:8080
-      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/auth/**,/users/**
-      SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0: PreserveHostHeader
-      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: expense-service
-      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://expense-service:8081
-      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/expense/**
+      # SPRING_CLOUD_GATEWAY_ROUTES_0_ID: auth-service
+      # SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://auth-service:8080
+      # SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/auth/**,/users/**
+      # SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0: PreserveHostHeader
+      # SPRING_CLOUD_GATEWAY_ROUTES_1_ID: expense-service
+      # SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://expense-service:8081
+      # SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/expense/**
       SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED: false
       SECURITY_JWT_PRIVATE_KEY_PATH: classpath:keys/private_key.pem
       SECURITY_JWT_PUBLIC_KEY_PATH: classpath:keys/public_key.pem
@@ -165,7 +165,7 @@ volumes:
   mysql-expense-data:
   mysql-auth-data:
   redis-data:
-  rabbitmq-data:
+  #rabbitmq-data:
 
 # Tạo network riêng để các service internal có thể giao tiếp với nhau
 networks:
