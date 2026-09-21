@@ -2,6 +2,7 @@ package com.example.expense_service.controllers;
 
 import com.example.expense_service.dtos.CategoryRequestDTO;
 import com.example.expense_service.dtos.CategoryResponseDTO;
+import com.example.expense_service.dtos.ParentCategoryResponseDTO;
 import com.example.expense_service.services.CategoryService;
 
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,12 @@ public class CategoryController {
 
     public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
+    }
+
+    @GetMapping("/parent")
+    public ResponseEntity<List<ParentCategoryResponseDTO>> getParentCategories() {
+        List<ParentCategoryResponseDTO> parentCategories = categoryService.getParentCategories();
+        return ResponseEntity.ok(parentCategories);
     }
 
     @GetMapping
