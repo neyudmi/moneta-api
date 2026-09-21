@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.myauth.services.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 
 import com.example.myauth.dtos.ChangePasswordRequestDto;
@@ -26,6 +28,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
     public ResponseEntity<InforUserDto> getUserInfo(@AuthenticationPrincipal User user) {
         InforUserDto userInfo = new InforUserDto(
@@ -36,6 +39,7 @@ public class UserController {
         return ResponseEntity.ok(userInfo);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(
             @AuthenticationPrincipal User user,
@@ -44,6 +48,7 @@ public class UserController {
         return ResponseEntity.ok("Password changed successfully.");
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PutMapping("/me")
     public ResponseEntity<UpdateUserRequestDto> updateUserInfo(@AuthenticationPrincipal User user,
             @Valid @RequestBody UpdateUserRequestDto requestDto) {
