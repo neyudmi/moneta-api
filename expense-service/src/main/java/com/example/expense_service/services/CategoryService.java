@@ -2,6 +2,8 @@ package com.example.expense_service.services;
 
 import com.example.expense_service.dtos.CategoryRequestDTO;
 import com.example.expense_service.dtos.CategoryResponseDTO;
+import com.example.expense_service.dtos.ParentCategoryResponseDTO;
+import com.example.expense_service.dtos.IconResponseDTO;
 import com.example.expense_service.entities.Category;
 import com.example.expense_service.entities.Icon;
 import com.example.expense_service.repositories.CategoryRepository;
@@ -14,7 +16,6 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,7 +28,21 @@ public class CategoryService {
                 this.iconRepository = iconRepository;
         }
 
-        @Transactional
+        public List<ParentCategoryResponseDTO> getParentCategories() {
+                List<Category> parents = categoryRepository.findByUserIdIsNull();
+
+                return parents.stream()
+                                .map(parent -> new ParentCategoryResponseDTO(
+                                                parent.getId(),
+                                                parent.getName(),
+                                                parent.getIcon() != null
+                                                                ? new IconResponseDTO(
+                                                                                parent.getIcon().getId(),
+                                                                                parent.getIcon().getFileName())
+                                                                : null))
+                                .toList();
+        }
+
         public List<CategoryResponseDTO> getAllCategories(UUID userId) {
                 requireForUser(userId);
 
@@ -56,6 +71,7 @@ public class CategoryService {
                 return toResponse(category);
         }
 
+        @Transactional
         public CategoryResponseDTO createCategory(UUID userId, CategoryRequestDTO categoryRequestDTO) {
                 String name = categoryRequestDTO.getName();
                 UUID iconId = categoryRequestDTO.getIconId();
@@ -254,10 +270,24 @@ public class CategoryService {
                 return new CategoryResponseDTO(
                                 category.getId(),
                                 category.getName(),
-                                category.getIcon().getFileName(),
-                                category.getParent() != null
-                                                ? category.getParent().getId()
-                                                : null);
+                                toIconResponse(category.getIcon()),
+                                toParentResponse(category.getParent()));
+        }
+
+        private IconResponseDTO toIconResponse(Icon icon) {
+                return new IconResponseDTO(
+                                icon.getId(),
+                                icon.getFileName());
+        }
+
+        private ParentCategoryResponseDTO toParentResponse(Category parent) {
+                if (parent == null) {
+                        return null;
+                }
+                return new ParentCategoryResponseDTO(
+                                parent.getId(),
+                                parent.getName(),
+                                toIconResponse(parent.getIcon()));
         }
 
 }

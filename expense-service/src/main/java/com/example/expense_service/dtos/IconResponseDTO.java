@@ -4,6 +4,5 @@ import java.util.UUID;
 
 public record IconResponseDTO(
         UUID id,
-        String name,
-        String fileName) {
+        String iconFileName) {
 }

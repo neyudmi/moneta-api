@@ -5,6 +5,6 @@ import java.util.UUID;
 public record CategoryResponseDTO(
                 UUID id,
                 String name,
-                String iconFileName,
-                UUID parentId) {
+                IconResponseDTO icon,
+                ParentCategoryResponseDTO parentCategory) {
 }

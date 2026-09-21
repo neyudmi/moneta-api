@@ -21,7 +21,6 @@ public class IconService {
                 .stream()
                 .map(icon -> new IconResponseDTO(
                         icon.getId(),
-                        icon.getName(),
                         icon.getFileName()))
                 .toList();
     }
@@ -30,7 +29,6 @@ public class IconService {
         return iconRepository.findById(id)
                 .map(icon -> new IconResponseDTO(
                         icon.getId(),
-                        icon.getName(),
                         icon.getFileName()));
     }
 }
