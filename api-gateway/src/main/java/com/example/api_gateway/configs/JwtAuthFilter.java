@@ -29,6 +29,11 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                 .getURI()
                 .getPath();
 
+        if (path.startsWith("/swagger-docs/")
+                || path.startsWith("/swagger-ui/")
+                || path.equals("/swagger-ui.html")) {
+            return chain.filter(exchange);
+        }
         if (!requiresAuthentication(path)) {
             return chain.filter(exchange);
         }
