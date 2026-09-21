@@ -6,7 +6,6 @@ import com.example.expense_service.entities.Category;
 import com.example.expense_service.entities.Icon;
 import com.example.expense_service.repositories.CategoryRepository;
 import com.example.expense_service.repositories.IconRepository;
-import com.example.expense_service.exceptions.BadRequestException;
 import com.example.expense_service.exceptions.ResourceNotFoundException;
 import com.example.expense_service.exceptions.UnauthorizedException;
 
@@ -20,259 +19,245 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CategoryService {
-    private final CategoryRepository categoryRepository;
-    private final IconRepository iconRepository;
+        private final CategoryRepository categoryRepository;
+        private final IconRepository iconRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, IconRepository iconRepository) {
-        this.categoryRepository = categoryRepository;
-        this.iconRepository = iconRepository;
-    }
-
-    @Transactional
-    public List<CategoryResponseDTO> getAllCategories(UUID userId) {
-        requireForUser(userId);
-
-        // Create default categories for the user if they don't exist
-        if (!categoryRepository.existsByUserId(userId)) {
-            createDefaultCategories(userId);
+        public CategoryService(CategoryRepository categoryRepository, IconRepository iconRepository) {
+                this.categoryRepository = categoryRepository;
+                this.iconRepository = iconRepository;
         }
 
-        List<Category> parents = categoryRepository.findByUserIdIsNull();
+        @Transactional
+        public List<CategoryResponseDTO> getAllCategories(UUID userId) {
+                requireForUser(userId);
 
-        List<Category> children = categoryRepository.findByUserId(userId);
+                // Create default categories for the user if they don't exist
+                if (!categoryRepository.existsByUserId(userId)) {
+                        createDefaultCategories(userId);
+                }
 
-        return Stream.concat(
-                parents.stream(),
-                children.stream())
-                .map(this::toResponse)
-                .toList();
-    }
+                List<Category> parents = categoryRepository.findByUserIdIsNull();
 
-    public CategoryResponseDTO getCategoryById(UUID userId, UUID categoryId) {
-        Category category = categoryRepository.findById(categoryId)
-                .filter(
-                        cate -> cate.getUserId() == null || cate.getUserId().equals(userId))
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Category not found: " + categoryId));
-        return toResponse(category);
-    }
+                List<Category> children = categoryRepository.findByUserId(userId);
 
-    public CategoryResponseDTO createCategory(UUID userId, CategoryRequestDTO categoryRequestDTO) {
-        String name = categoryRequestDTO.getName();
-        UUID iconId = categoryRequestDTO.getIconId();
-        UUID parentId = categoryRequestDTO.getParentId();
-
-        requireForCategory(name, iconId, parentId);
-        requireForUser(userId);
-
-        Icon icon = iconRepository
-                .findById(iconId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Icon not found: " + iconId));
-
-        Category parent = categoryRepository
-                .findById(parentId)
-                .filter(cate -> cate.getUserId() == null)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Parent category not found: " + parentId));
-
-        Category category = new Category(
-                userId,
-                name,
-                icon,
-                parent);
-
-        return toResponse(categoryRepository.save(category));
-    }
-
-    @Transactional
-    public CategoryResponseDTO updateCategory(UUID userId, UUID categoryId, CategoryRequestDTO categoryRequestDTO) {
-        String name = categoryRequestDTO.getName();
-        UUID iconId = categoryRequestDTO.getIconId();
-        UUID parentId = categoryRequestDTO.getParentId();
-
-        requireForUser(userId);
-        requireForCategory(name, iconId, parentId);
-
-        Category category = categoryRepository
-                .findByIdAndUserId(categoryId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Category not found: " + categoryId));
-
-        Icon icon = iconRepository
-                .findById(iconId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Icon not found: " + iconId));
-
-        Category parent = categoryRepository
-                .findById(parentId)
-                .filter(cate -> cate.getUserId() == null)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Parent category not found: " + parentId));
-
-        category.setName(name);
-        category.setIcon(icon);
-        category.setParent(parent);
-
-        return toResponse(category);
-    }
-
-    @Transactional
-    public void deleteCategory(UUID userId, UUID categoryId) {
-        requireForUser(userId);
-        Category category = categoryRepository
-                .findByIdAndUserId(categoryId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
-
-        categoryRepository.delete(category);
-    }
-
-    private void requireForUser(UUID userId) {
-        if (userId == null) {
-            throw new UnauthorizedException(
-                    "Authenticated user is required");
+                return Stream.concat(
+                                parents.stream(),
+                                children.stream())
+                                .map(this::toResponse)
+                                .toList();
         }
-    }
 
-    private void requireForCategory(String name, UUID iconId, UUID parentId) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new BadRequestException("Category name is required");
+        public CategoryResponseDTO getCategoryById(UUID userId, UUID categoryId) {
+                Category category = categoryRepository.findById(categoryId)
+                                .filter(
+                                                cate -> cate.getUserId() == null || cate.getUserId().equals(userId))
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Category not found: " + categoryId));
+                return toResponse(category);
         }
-        if (iconId == null) {
-            throw new BadRequestException("Icon is required");
+
+        public CategoryResponseDTO createCategory(UUID userId, CategoryRequestDTO categoryRequestDTO) {
+                String name = categoryRequestDTO.getName();
+                UUID iconId = categoryRequestDTO.getIconId();
+                UUID parentId = categoryRequestDTO.getParentId();
+
+                requireForUser(userId);
+
+                Icon icon = iconRepository
+                                .findById(iconId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Icon not found: " + iconId));
+
+                Category parent = categoryRepository
+                                .findById(parentId)
+                                .filter(cate -> cate.getUserId() == null)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Parent category not found: " + parentId));
+
+                Category category = new Category(
+                                userId,
+                                name,
+                                icon,
+                                parent);
+
+                return toResponse(categoryRepository.save(category));
         }
-        if (parentId == null) {
-            throw new BadRequestException("Parent category is required");
+
+        @Transactional
+        public CategoryResponseDTO updateCategory(UUID userId, UUID categoryId, CategoryRequestDTO categoryRequestDTO) {
+                String name = categoryRequestDTO.getName();
+                UUID iconId = categoryRequestDTO.getIconId();
+                UUID parentId = categoryRequestDTO.getParentId();
+
+                requireForUser(userId);
+
+                Category category = categoryRepository
+                                .findByIdAndUserId(categoryId, userId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Category not found: " + categoryId));
+
+                Icon icon = iconRepository
+                                .findById(iconId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Icon not found: " + iconId));
+
+                Category parent = categoryRepository
+                                .findById(parentId)
+                                .filter(cate -> cate.getUserId() == null)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Parent category not found: " + parentId));
+
+                category.setName(name);
+                category.setIcon(icon);
+                category.setParent(parent);
+
+                return toResponse(category);
         }
-    }
 
-    private void createDefaultCategories(UUID userId) {
+        @Transactional
+        public void deleteCategory(UUID userId, UUID categoryId) {
+                requireForUser(userId);
+                Category category = categoryRepository
+                                .findByIdAndUserId(categoryId, userId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryId));
 
-        Category food = getParent("Ăn uống");
-        Category children = getParent("Con cái");
-        Category service = getParent("Dịch vụ sinh hoạt");
-        Category transportation = getParent("Đi lại");
-        Category ceremony = getParent("Hiếu hỉ");
-        Category entertainment = getParent("Hưởng thụ");
-        Category house = getParent("Nhà cửa");
-        Category health = getParent("Sức khỏe");
-        Category selfDevelopment = getParent("Phát triển bản thân");
-        Category clothing = getParent("Trang phục");
-        Category income = getParent("Thu tiền");
+                categoryRepository.delete(category);
+        }
 
-        List<Category> categories = List.of(
+        private void requireForUser(UUID userId) {
+                if (userId == null) {
+                        throw new UnauthorizedException(
+                                        "Authenticated user is required");
+                }
+        }
 
-                // Ăn uống
-                createChild(userId, "Ăn sáng", "ic_breakfast", food),
-                createChild(userId, "Ăn trưa", "ic_lunch", food),
-                createChild(userId, "Ăn tối", "ic_dinner", food),
-                createChild(userId, "Cà phê", "ic_cafe", food),
-                createChild(userId, "Ăn tiệm", "ic_restaurant", food),
+        private void createDefaultCategories(UUID userId) {
 
-                // Con cái
-                createChild(userId, "Học phí", "ic_tuition", children),
-                createChild(userId, "Sách vở", "ic_book", children),
-                createChild(userId, "Sữa", "ic_milk", children),
-                createChild(userId, "Tiền tiêu vặt", "ic_pocketmoney", children),
-                createChild(userId, "Đồ chơi", "ic_toy", children),
+                Category food = getParent("Ăn uống");
+                Category children = getParent("Con cái");
+                Category service = getParent("Dịch vụ sinh hoạt");
+                Category transportation = getParent("Đi lại");
+                Category ceremony = getParent("Hiếu hỉ");
+                Category entertainment = getParent("Hưởng thụ");
+                Category house = getParent("Nhà cửa");
+                Category health = getParent("Sức khỏe");
+                Category selfDevelopment = getParent("Phát triển bản thân");
+                Category clothing = getParent("Trang phục");
+                Category income = getParent("Thu tiền");
 
-                // Dịch vụ sinh hoạt
-                createChild(userId, "Điện", "ic_electric", service),
-                createChild(userId, "Nước", "ic_water", service),
-                createChild(userId, "Internet", "ic_internet", service),
-                createChild(userId, "Điện thoại", "ic_smartphone", service),
-                createChild(userId, "Điện thoại bàn", "ic_telephone", service),
-                createChild(userId, "Gas", "ic_gas", service),
-                createChild(userId, "Thuê người giúp việc", "ic_cleaning", service),
-                createChild(userId, "Truyền hình", "ic_tv", service),
+                List<Category> categories = List.of(
 
-                // Đi lại
-                createChild(userId, "Xăng xe", "ic_gasoline", transportation),
-                createChild(userId, "Taxi/Grab", "ic_taxi", transportation),
-                createChild(userId, "Bảo dưỡng xe", "ic_fix", transportation),
-                createChild(userId, "Rửa xe", "ic_carwash", transportation),
-                createChild(userId, "Gửi xe", "ic_parking", transportation),
-                createChild(userId, "Bảo hiểm", "ic_insurance", transportation),
+                                // Ăn uống
+                                createChild(userId, "Ăn sáng", "ic_breakfast", food),
+                                createChild(userId, "Ăn trưa", "ic_lunch", food),
+                                createChild(userId, "Ăn tối", "ic_dinner", food),
+                                createChild(userId, "Cà phê", "ic_cafe", food),
+                                createChild(userId, "Ăn tiệm", "ic_restaurant", food),
 
-                // Hiếu hỉ
-                createChild(userId, "Biếu tặng", "ic_gift", ceremony),
-                createChild(userId, "Cưới xin", "ic_marriage", ceremony),
-                createChild(userId, "Ma chay", "ic_funeral", ceremony),
-                createChild(userId, "Thăm bệnh", "ic_visit_patient", ceremony),
+                                // Con cái
+                                createChild(userId, "Học phí", "ic_tuition", children),
+                                createChild(userId, "Sách vở", "ic_book", children),
+                                createChild(userId, "Sữa", "ic_milk", children),
+                                createChild(userId, "Tiền tiêu vặt", "ic_pocketmoney", children),
+                                createChild(userId, "Đồ chơi", "ic_toy", children),
 
-                // Hưởng thụ
-                createChild(userId, "Du lịch", "ic_tourism", entertainment),
-                createChild(userId, "Phim ảnh ca nhạc", "ic_film", entertainment),
-                createChild(userId, "Vui chơi giải trí", "ic_entertainment", entertainment),
-                createChild(userId, "Làm đẹp", "ic_skincare", entertainment),
-                createChild(userId, "Mỹ phẩm", "ic_cosmetics", entertainment),
+                                // Dịch vụ sinh hoạt
+                                createChild(userId, "Điện", "ic_electric", service),
+                                createChild(userId, "Nước", "ic_water", service),
+                                createChild(userId, "Internet", "ic_internet", service),
+                                createChild(userId, "Điện thoại", "ic_smartphone", service),
+                                createChild(userId, "Điện thoại bàn", "ic_telephone", service),
+                                createChild(userId, "Gas", "ic_gas", service),
+                                createChild(userId, "Thuê người giúp việc", "ic_cleaning", service),
+                                createChild(userId, "Truyền hình", "ic_tv", service),
 
-                // Nhà cửa
-                createChild(userId, "Thuê nhà", "ic_rent", house),
-                createChild(userId, "Sửa chữa nhà cửa", "ic_houserepair", house),
-                createChild(userId, "Mua sắm đồ đạc", "ic_interior", house),
+                                // Đi lại
+                                createChild(userId, "Xăng xe", "ic_gasoline", transportation),
+                                createChild(userId, "Taxi/Grab", "ic_taxi", transportation),
+                                createChild(userId, "Bảo dưỡng xe", "ic_fix", transportation),
+                                createChild(userId, "Rửa xe", "ic_carwash", transportation),
+                                createChild(userId, "Gửi xe", "ic_parking", transportation),
+                                createChild(userId, "Bảo hiểm", "ic_insurance", transportation),
 
-                // Sức khỏe
-                createChild(userId, "Khám chữa bệnh", "ic_stethoscope", health),
-                createChild(userId, "Thuốc men", "ic_medicine", health),
-                createChild(userId, "Thể thao", "ic_sport", health),
+                                // Hiếu hỉ
+                                createChild(userId, "Biếu tặng", "ic_gift", ceremony),
+                                createChild(userId, "Cưới xin", "ic_marriage", ceremony),
+                                createChild(userId, "Ma chay", "ic_funeral", ceremony),
+                                createChild(userId, "Thăm bệnh", "ic_visit_patient", ceremony),
 
-                // Phát triển bản thân
-                createChild(userId, "Giao lưu, quan hệ", "ic_handshake", selfDevelopment),
-                createChild(userId, "Học hành", "ic_study", selfDevelopment),
+                                // Hưởng thụ
+                                createChild(userId, "Du lịch", "ic_tourism", entertainment),
+                                createChild(userId, "Phim ảnh ca nhạc", "ic_film", entertainment),
+                                createChild(userId, "Vui chơi giải trí", "ic_entertainment", entertainment),
+                                createChild(userId, "Làm đẹp", "ic_skincare", entertainment),
+                                createChild(userId, "Mỹ phẩm", "ic_cosmetics", entertainment),
 
-                // Trang phục
-                createChild(userId, "Giày dép", "ic_shoes", clothing),
-                createChild(userId, "Quần áo", "ic_clothes", clothing),
-                createChild(userId, "Phụ kiện", "ic_accessory", clothing),
+                                // Nhà cửa
+                                createChild(userId, "Thuê nhà", "ic_rent", house),
+                                createChild(userId, "Sửa chữa nhà cửa", "ic_houserepair", house),
+                                createChild(userId, "Mua sắm đồ đạc", "ic_interior", house),
 
-                // Thu tiền
-                createChild(userId, "Đi vay", "ic_borrow", income),
-                createChild(userId, "Được cho/tặng", "ic_gift_2", income),
-                createChild(userId, "Khác", "ic_difference", income),
-                createChild(userId, "Lương", "ic_salary_2", income),
-                createChild(userId, "Thu nợ", "ic_debt", income),
-                createChild(userId, "Thưởng", "ic_reward", income),
-                createChild(userId, "Tiền lãi", "ic_interest", income),
-                createChild(userId, "Tiền vào", "ic_income", income));
+                                // Sức khỏe
+                                createChild(userId, "Khám chữa bệnh", "ic_stethoscope", health),
+                                createChild(userId, "Thuốc men", "ic_medicine", health),
+                                createChild(userId, "Thể thao", "ic_sport", health),
 
-        categoryRepository.saveAll(categories);
-    }
+                                // Phát triển bản thân
+                                createChild(userId, "Giao lưu, quan hệ", "ic_handshake", selfDevelopment),
+                                createChild(userId, "Học hành", "ic_study", selfDevelopment),
 
-    private Category getParent(String name) {
-        return categoryRepository
-                .findByName(name)
-                .orElseThrow(() -> new IllegalStateException(
-                        "System category not found: " + name));
-    }
+                                // Trang phục
+                                createChild(userId, "Giày dép", "ic_shoes", clothing),
+                                createChild(userId, "Quần áo", "ic_clothes", clothing),
+                                createChild(userId, "Phụ kiện", "ic_accessory", clothing),
 
-    private Category createChild(
-            UUID userId,
-            String name,
-            String iconFileName,
-            Category parent) {
+                                // Thu tiền
+                                createChild(userId, "Đi vay", "ic_borrow", income),
+                                createChild(userId, "Được cho/tặng", "ic_gift_2", income),
+                                createChild(userId, "Khác", "ic_difference", income),
+                                createChild(userId, "Lương", "ic_salary_2", income),
+                                createChild(userId, "Thu nợ", "ic_debt", income),
+                                createChild(userId, "Thưởng", "ic_reward", income),
+                                createChild(userId, "Tiền lãi", "ic_interest", income),
+                                createChild(userId, "Tiền vào", "ic_income", income));
 
-        Icon icon = iconRepository
-                .findByFileName(iconFileName)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Icon not found: " + iconFileName));
+                categoryRepository.saveAll(categories);
+        }
 
-        return new Category(
-                userId,
-                name,
-                icon,
-                parent);
-    }
+        private Category getParent(String name) {
+                return categoryRepository
+                                .findByName(name)
+                                .orElseThrow(() -> new IllegalStateException(
+                                                "System category not found: " + name));
+        }
 
-    private CategoryResponseDTO toResponse(Category category) {
+        private Category createChild(
+                        UUID userId,
+                        String name,
+                        String iconFileName,
+                        Category parent) {
 
-        return new CategoryResponseDTO(
-                category.getId(),
-                category.getName(),
-                category.getIcon().getFileName(),
-                category.getParent() != null
-                        ? category.getParent().getId()
-                        : null);
-    }
+                Icon icon = iconRepository
+                                .findByFileName(iconFileName)
+                                .orElseThrow(() -> new IllegalStateException(
+                                                "Icon not found: " + iconFileName));
+
+                return new Category(
+                                userId,
+                                name,
+                                icon,
+                                parent);
+        }
+
+        private CategoryResponseDTO toResponse(Category category) {
+
+                return new CategoryResponseDTO(
+                                category.getId(),
+                                category.getName(),
+                                category.getIcon().getFileName(),
+                                category.getParent() != null
+                                                ? category.getParent().getId()
+                                                : null);
+        }
 
 }
