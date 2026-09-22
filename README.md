@@ -69,9 +69,19 @@ Stores expense-related data, including wallets, categories, icons, transactions,
 <p align="center"> <img src="./expense.png" width="60%"> </p>
 
 ## Getting Stared
-### 1. Install Docker
+
+### 1. Clone Repository
+Clone the repository and navigate to the project directory: 
+
+```
+git clone https://github.com/neyudmi/moneta-api.git
+```
+
+### 2. Install Docker
+
 Make sure Docker and Docker Compose are installed on your machine.
-### 2. Start Service
+
+### 3. Start Service
 
 You can manually pull all required Docker images defined in the Docker Compose configuration:
 
@@ -85,7 +95,7 @@ Or simply start the application directly. Docker Compose will automatically pull
 docker compose up -d
 ```
 
-### 3. Access Service 
+### 4. Access Service 
 
 Once all containers are running, the API Gateway will be available at: http://localhost:8000
 
