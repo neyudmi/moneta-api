@@ -3,10 +3,10 @@ services:
     image: mysql:8.0
     container_name: mysql-expense
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: expense
-      MYSQL_USER: expense
-      MYSQL_PASSWORD: expense
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: expensedb
+      MYSQL_USER: expenseuser
+      MYSQL_PASSWORD: expensepass
     volumes:
       - mysql-expense-data:/var/lib/mysql
     networks:
@@ -26,16 +26,16 @@ services:
       interval: 10s 
       timeout: 5s 
       retries: 5
-      start_period: 30s 
+      start_period: 30s
 
   mysql-auth:
     image: mysql:8.0
     container_name: mysql-auth
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: auth
-      MYSQL_USER: auth
-      MYSQL_PASSWORD: auth
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: authdb
+      MYSQL_USER: authuser
+      MYSQL_PASSWORD: authpass
     volumes:
       - mysql-auth-data:/var/lib/mysql
     networks:
@@ -84,7 +84,7 @@ services:
       SECURITY_JWT_PUBLIC_KEY_PATH: classpath:keys/public_key.pem
       SECURITY_JWT_EXPIRATION_TIME: 900000
       SECURITY_JWT_REFRESH_EXPIRATION_TIME: 259200000
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/auth
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/authdb
       SPRING_DATASOURCE_USERNAME: authuser
       SPRING_DATASOURCE_PASSWORD: authpass
       SPRING_DATA_REDIS_HOST: redis
@@ -103,7 +103,7 @@ services:
         condition: service_healthy
     environment:
       SECURITY_JWT_PUBLIC_KEY_PATH: classpath:keys/public_key.pem
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-expense:3306/expense
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-expense:3306/expensedb
       SPRING_DATASOURCE_USERNAME: expenseuser
       SPRING_DATASOURCE_PASSWORD: expensepass
       SPRING_DATA_REDIS_HOST: redis
@@ -140,7 +140,7 @@ volumes:
   mysql-expense-data:
   mysql-auth-data:
   redis-data:
-  
+
 networks:
   backend-net:
     driver: bridge
