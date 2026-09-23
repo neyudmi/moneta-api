@@ -99,8 +99,7 @@ docker compose up -d
 
 Once all containers are running, the API Gateway will be available at: http://localhost:8000
 
-Alternatively, access Swagger UI to explore and test the available APIs: http://3.106.245.213/swagger-ui/index.html
-
+Alternatively, access Swagger UI to explore and test the available APIs: http://3.25.236.100/swagger-ui/index.html
 
 
 
